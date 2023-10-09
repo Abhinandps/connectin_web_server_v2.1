@@ -6,8 +6,8 @@ import { Model, Connection } from 'mongoose'
 
 
 @Injectable()
-export class UsersRepository extends AbstractRepository<User>{
-    protected readonly logger = new Logger(UsersRepository.name)
+export class AuthRepository extends AbstractRepository<User>{
+    protected readonly logger = new Logger(AuthRepository.name)
 
     constructor(
         @InjectModel(User.name) userModel: Model<User>,
