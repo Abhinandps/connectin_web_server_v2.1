@@ -1,7 +1,7 @@
-import { Injectable, ConflictException, UnprocessableEntityException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserRequest, UserSignInDto } from './dto/auth-request.dto';
+import { CreateUserRequest, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
 import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt'
 import { User } from './schemas/user.schema';
@@ -12,6 +12,7 @@ export interface JwtPayload {
   email: string;
   role: string;
 }
+
 
 
 @Injectable()
@@ -25,6 +26,7 @@ export class AuthService {
 
 
   async validateUserByPassword(payload: UserSignInDto) {
+
     const { email, password } = payload;
     const user = await this.authRepository.findOne({ email: email.toLowerCase() });
     if (!user) {
@@ -45,6 +47,7 @@ export class AuthService {
 
   }
 
+
   async create(userInput: CreateUserRequest) {
     await this.validateCreateUserRequest(userInput)
     const pass = await this.hashPassword(userInput.password)
@@ -57,6 +60,8 @@ export class AuthService {
         lastName: userInput?.lastName?.toLowerCase(),
         password: pass,
         isEmailConfirmed: false,
+        isOtpVerified: false,
+        passwordResetOTP: null,
         refresh_token: null
       })
 
@@ -90,6 +95,67 @@ export class AuthService {
     return tokens;
   }
 
+
+  async changeNewPassword({ email, newPassword, confirmNewPassword }: UserChangePasswordDto) {
+    try {
+
+      if (newPassword !== confirmNewPassword) {
+        throw new BadRequestException('New password and confirmation do not match');
+      }
+
+      const pass = await this.hashPassword(newPassword)
+
+      const user = await this.authRepository.findOne({ email });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.passwordResetOTP !== null) {
+        throw new NotFoundException('Something went wrong');
+      }
+
+      if (!user.isOtpVerified) {
+        throw new NotFoundException('Something went wrong');
+      }
+
+      await this.authRepository.findOneAndUpdate({ email }, {
+        $set: { password: pass }
+      });
+
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      } else if (error instanceof NotFoundException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException('Password change failed');
+      }
+    }
+  }
+
+
+
+  async logout() {
+
+    const access_token_expires_at = new Date();
+    access_token_expires_at.setSeconds(
+      access_token_expires_at.getSeconds() - 1
+    );
+
+    const refresh_token_expires_at = new Date();
+    refresh_token_expires_at.setTime(refresh_token_expires_at.getTime() - 1000);
+
+    const response = {
+      access_token: "",
+      refresh_token: "",
+      access_token_expires_at,
+      refresh_token_expires_at
+    }
+
+    return response;
+  }
 
 
   // from refresh_jwt strategy

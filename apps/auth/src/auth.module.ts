@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi'
-import { DatabaseModule } from '@app/common';
+import { DatabaseModule, KafkaModule } from '@app/common';
 import { AuthRepository } from './auth.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
@@ -17,6 +17,7 @@ import EmailService from './email.service';
 
 @Module({
   imports: [
+    KafkaModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     ConfigModule.forRoot({
       isGlobal: true,

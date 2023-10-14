@@ -18,6 +18,9 @@ export class User extends AbstractDocument {
     isEmailConfirmed: boolean;
 
     @Prop()
+    isOtpVerified: boolean;
+
+    @Prop()
     password: string;
 
     @Prop()
@@ -25,6 +28,9 @@ export class User extends AbstractDocument {
 
     @Prop()
     lastName: string
+
+    @Prop({ default: null })
+    passwordResetOTP: number
 
     @Prop({ default: null })
     refresh_token: string

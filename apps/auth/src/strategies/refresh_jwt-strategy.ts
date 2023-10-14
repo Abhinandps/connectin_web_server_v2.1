@@ -18,8 +18,17 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (request: any) => {
-                    
-                    let data = request?.cookies["refresh_token"];
+
+                    let tokens = request?.body?.reqHeaders?.cookie.split('; ');
+                    let data;
+                    for (const token of tokens) {
+                        console.log(token);
+
+                        if (token.startsWith('refresh_token=')) {
+                            data = token.substring('refresh_token='.length)
+                            break;
+                        }
+                    }
                     if (!data) {
                         return null;
                     }
@@ -31,7 +40,7 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         });
     }
     async validate(req: any, payload: any) {
-        const refreshToken = req?.cookies["refresh_token"];
+        const refreshToken = req?.body?.reqHeaders?.cookie.split('=')[1];
 
         const user = await this.authService.validateJwtPayload(payload);
         if (!user) {

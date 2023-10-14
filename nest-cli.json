@@ -1,14 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/ConnectIn-Social/src",
+  "sourceRoot": "apps/apps/cloud-gateway/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/ConnectIn-Social/tsconfig.app.json"
+    "tsConfigPath": "apps/apps/cloud-gateway/tsconfig.app.json"
   },
   "monorepo": true,
-  "root": "apps/ConnectIn-Social",
+  "root": "apps/apps/cloud-gateway",
   "projects": {
     "auth": {
       "type": "application",
@@ -26,6 +26,15 @@
       "sourceRoot": "libs/common/src",
       "compilerOptions": {
         "tsConfigPath": "libs/common/tsconfig.lib.json"
+      }
+    },
+    "cloud-gateway": {
+      "type": "application",
+      "root": "apps/cloud-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/cloud-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/cloud-gateway/tsconfig.app.json"
       }
     }
   }

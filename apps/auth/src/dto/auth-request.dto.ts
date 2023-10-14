@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateUserRequest {
 
@@ -34,5 +34,44 @@ export class UserSignInDto {
     @IsNotEmpty()
     password: string;
 }
+
+
+export class UserResetDto {
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+}
+
+export class UserOtpDto {
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+
+    @IsNumber()
+    @IsNotEmpty()
+    otp: number;
+}
+
+export class UserChangePasswordDto {
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+
+    @IsString()
+    @IsNotEmpty()
+    newPassword: string;
+
+    @IsString()
+    @IsNotEmpty()
+    confirmNewPassword: string;
+}
+
+
+
+
+
+
+
+
 
 
