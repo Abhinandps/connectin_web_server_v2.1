@@ -23,7 +23,6 @@ export class AccessTokenJwtStrategy extends PassportStrategy(Strategy, "jwt") {
                             break;
                         }
                     }
-                    console.log(data, "data");
                     if (!data) {
                         return null;
                     }

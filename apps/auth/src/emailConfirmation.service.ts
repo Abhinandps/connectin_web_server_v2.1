@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from "@nestjs/comm
 import { ConfigService } from "@nestjs/config";
 import EmailService from "./email.service";
 import { AuthRepository } from "./auth.repository";
+import { JwtService } from "@nestjs/jwt";
 
 
 @Injectable()
@@ -10,18 +11,23 @@ export class EmailConfirmationService {
         private readonly configService: ConfigService,
         private readonly authRepository: AuthRepository,
         private readonly emailService: EmailService,
+        private readonly jwtService: JwtService
     ) { }
 
     public sendVerificationLink(email: string, token: string) {
 
         const url = `${this.configService.get('EMAIL_CONFIRMATION_URL')}?token=${token}`;
 
-        const text = `Welcome to the application. To confirm the email address, click here: ${url}`;
+        // const text = `Welcome to the application. To confirm the email address, click here: ${url}`;
+        const html = `
+        <p>Welcome to the application. To confirm your email address, click the button below:</p>
+        <a href="${url}" style="display: inline-block; background-color: #007bff; color: #fff; padding: 10px 20px; text-decoration: none; text-align: center;">Confirm Email</a>
+    `;
 
         return this.emailService.sendMail({
             to: email,
             subject: 'Email confirmation',
-            text,
+            html
         })
     }
 
@@ -96,18 +102,29 @@ export class EmailConfirmationService {
     //     await this.sendVerificationLink(user?.email, user?.role);
     // }
 
-    public async confirmEmail({ userId, email, isEmailConfirmed }, res) {
+    public async confirmEmail(token: string): Promise<boolean> {
+        try {
 
-        if (isEmailConfirmed) {
-            throw new BadRequestException('Email already confirmed');
+            const tokenPayload = await this.jwtService.verify(token, {
+                secret: this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
+            });
+
+            if (tokenPayload) {
+                const user = await this.authRepository.findOne({ email: tokenPayload.email })
+                if (user.isEmailConfirmed) {
+                    throw new BadRequestException('Email already confirmed');
+                }
+                // Mark the user's email as confirmed in the database.
+                await this.authRepository.findOneAndUpdate({ email: user.email }, {
+                    $set: { isEmailConfirmed: true }
+                })
+
+                return true;
+            }
+            return false
+        } catch (error) {
+            throw new Error('Email confirmation failed: ' + error.message);
         }
-
-        await this.authRepository.findOneAndUpdate({ email }, {
-            $set: { isEmailConfirmed: true }
-        })
-
-        res.status(200).json({ message: "confirmed" })
-
     }
 
 }

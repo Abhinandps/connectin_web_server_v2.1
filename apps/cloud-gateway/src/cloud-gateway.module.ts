@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { CloudGatewayController } from './cloud-gateway.controller';
 import { CloudGatewayService } from './cloud-gateway.service';
 import { ConfigModule } from '@nestjs/config';
@@ -19,4 +19,5 @@ import { HttpModule } from '@nestjs/axios';
   controllers: [CloudGatewayController],
   providers: [CloudGatewayService],
 })
+
 export class CloudGatewayModule { }

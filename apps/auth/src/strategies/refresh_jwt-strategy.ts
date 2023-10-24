@@ -22,7 +22,7 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
                     let tokens = request?.body?.reqHeaders?.cookie.split('; ');
                     let data;
                     for (const token of tokens) {
-                        console.log(token);
+                        // console.log(token);
 
                         if (token.startsWith('refresh_token=')) {
                             data = token.substring('refresh_token='.length)

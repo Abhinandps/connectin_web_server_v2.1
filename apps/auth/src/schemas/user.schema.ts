@@ -35,7 +35,7 @@ export class User extends AbstractDocument {
     @Prop({ default: null })
     refresh_token: string
 
-    @Prop({ type: String, enum: Object.values(UserRole) })
+    @Prop({ type: String, enum: Object.values(UserRole), default: "user" })
     role: string
 }
 

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -50,4 +50,6 @@ import EmailService from './email.service';
   controllers: [AuthController, EmailConfirmationController],
   providers: [AuthService, AuthRepository, RefreshTokenJwtStrategy, AccessTokenJwtStrategy, EmailConfirmationService, EmailService],
 })
-export class AuthModule { }
+export class AuthModule {
+ 
+ }

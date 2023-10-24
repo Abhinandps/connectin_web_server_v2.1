@@ -27,6 +27,7 @@ export class CloudGatewayService {
 
       return response.data;
     } catch (error) {
+
       if (error.response?.status === 404) {
         console.error(`Downstream service responded with a 404 error.`);
         throw new NotFoundException(error.response?.data);

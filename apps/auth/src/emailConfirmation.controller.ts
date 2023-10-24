@@ -3,11 +3,14 @@ import {
     ClassSerializerInterceptor,
     UseInterceptors,
     Post,
+    Get,
     Body,
     UseGuards,
     Request,
     Response,
-    HttpStatus
+    HttpStatus,
+    Query,
+    Param
 } from '@nestjs/common';
 import { EmailConfirmationService } from './emailConfirmation.service';
 import { AccessTokenGuard } from './guards/access_token_guard';
@@ -21,16 +24,31 @@ export class EmailConfirmationController {
         private readonly emailConfirmationService: EmailConfirmationService
     ) { }
 
-    @UseGuards(RefreshTokenGuard)
+    // @UseGuards(RefreshTokenGuard)
+    // @Post('email-confirmation/confirm')
+    // async confirm(@Request() req, @Response() res) {
+    //     const user = req.user
+    //     if (user) {
+    //          await this.emailConfirmationService.confirmEmail(user, res)
+    //     };
+    // }
+
     @Post('email-confirmation/confirm')
-    async confirm(@Request() req, @Response() res) {
-        const user = req.user
-        if (user) {
-             await this.emailConfirmationService.confirmEmail(user, res)
-        };
+    async confirm(@Body() data: any, @Request() req) {
+        try {
+            
+            const emailConfirmed = await this.emailConfirmationService.confirmEmail(data?.token)
+            if (emailConfirmed) {
+                return 'Email confirmed successfully.';
+            } else {
+                return 'Email confirmation failed. Invalid or expired token.';
+            }
+        } catch (error) {
+            return 'Email confirmation failed. ' + error.message;
+        }
     }
 
-    
+
 
     // @Post('resend-confirmation-link')
     // @UseGuards(JwtAuthGuard)

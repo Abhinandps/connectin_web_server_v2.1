@@ -2,24 +2,24 @@ import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-valid
 
 export class CreateUserRequest {
 
-    @IsEmail()
     @IsNotEmpty()
+    @IsEmail()
     email: string;
 
-    @IsString()
     @IsNotEmpty()
+    @IsString()
     password: string;
 
-    @IsString()
     @IsNotEmpty()
+    @IsString()
     firstName: string;
 
-    @IsString()
     @IsNotEmpty()
+    @IsString()
     lastName: string;
 
-    @IsString()
     @IsOptional()
+    @IsString()
     role: string;
 }
 

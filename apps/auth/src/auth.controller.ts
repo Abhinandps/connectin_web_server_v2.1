@@ -19,7 +19,7 @@ export class AuthController {
     @Response() res
   ) {
     const response = await this.authService.create(body)
-    await this.emailConfirmationService.sendVerificationLink(response?.email, response.access_token)
+    await this.emailConfirmationService.sendVerificationLink(response?.user?.email, response.refresh_token)
     return res.send(response)
   }
 
@@ -31,6 +31,7 @@ export class AuthController {
     @Request() req,
     @Response() res
   ) {
+
     const response = await this.authService.validateUserByPassword(body);
     return res.send(response)
   }
@@ -40,8 +41,9 @@ export class AuthController {
   async forgotPassword(
     @Body() body: UserResetDto
   ) {
-    await this.emailConfirmationService.sendOneTimePasswordByEmail(body?.email)
+    return await this.emailConfirmationService.sendOneTimePasswordByEmail(body?.email)
   }
+
 
   @Post('verify-request-reset')
   async verifyOTP(
@@ -51,6 +53,7 @@ export class AuthController {
     return await this.emailConfirmationService.verifyOneTimePasswordByEmail(body?.email, body?.otp, res)
   }
 
+
   @Post('change-password')
   async changePassword(
     @Body() body: UserChangePasswordDto
@@ -58,6 +61,7 @@ export class AuthController {
     const response = await this.authService.changeNewPassword(body)
     return response;
   }
+
 
   // @UseGuards(AccessTokenGuard)
   @Get("logout")
@@ -75,11 +79,22 @@ export class AuthController {
 
     const user = req.user;
     const response = await this.authService.refreshToken(user)
-    res.cookie("access_token", response.access_token, {
-      httpOnly: true,
-      expires: response.access_token_expires_at
-    })
+    // res.cookie("access_token", response.access_token, {
+    //   httpOnly: true,
+    //   expires: response.access_token_expires_at
+    // })
     return res.send(response)
+  }
+
+  @UseGuards(RefreshTokenGuard)
+  @Get('/validate-token')
+  public async fetchDataBasedOnToken(@Request() req, @Response() res) {
+    const user = req.user
+    return res.send({
+      _id: user._id,
+      email: user.email,
+      role: user.role
+    })
   }
 
 }
