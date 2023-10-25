@@ -1,16 +1,32 @@
-import { Injectable, ConflictException, UnprocessableEntityException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserRequest, UserSignInDto } from './dto/auth-request.dto';
+import { CreateUserRequest, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
 import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt'
 import { User } from './schemas/user.schema';
+import { ObjectId } from 'mongoose';
 
 
 export interface JwtPayload {
   userId: any;
   email: string;
   role: string;
+}
+
+
+interface UserData {
+  userId: ObjectId;
+  email: string;
+  role: string;
+}
+
+interface ConvertedData {
+  user: UserData,
+  access_token: string;
+  refresh_token: string;
+  access_token_expires_at: Date;
+  refresh_token_expires_at: Date;
 }
 
 
@@ -25,10 +41,11 @@ export class AuthService {
 
 
   async validateUserByPassword(payload: UserSignInDto) {
+
     const { email, password } = payload;
     const user = await this.authRepository.findOne({ email: email.toLowerCase() });
     if (!user) {
-      throw new NotFoundException()
+      throw new UnauthorizedException('Invalid username or password.')
     }
 
     let isMatch = false;
@@ -36,14 +53,33 @@ export class AuthService {
     isMatch = await this.comparePassword(password, user.password)
 
     if (isMatch) {
+
+      if (!user.isEmailConfirmed) {
+        throw new UnauthorizedException('Your email address has not been confirmed.')
+      }
+
       const data = await this.createToken(user);
       await this.updateRefreshTokenByEmail(user.email, data.refresh_token)
-      return data;
+      const originalData = data
+      const convertedData: ConvertedData = {
+        user: {
+          userId: originalData?.userId,
+          email: originalData?.email,
+          role: originalData?.role
+        },
+        access_token: originalData?.access_token,
+        refresh_token: originalData?.refresh_token,
+        access_token_expires_at: originalData?.access_token_expires_at,
+        refresh_token_expires_at: originalData?.refresh_token_expires_at
+      }
+
+      return convertedData;
     } else {
-      throw new NotFoundException('user with email password not found')
+      throw new UnauthorizedException('Invalid username or password.')
     }
 
   }
+
 
   async create(userInput: CreateUserRequest) {
     await this.validateCreateUserRequest(userInput)
@@ -57,13 +93,29 @@ export class AuthService {
         lastName: userInput?.lastName?.toLowerCase(),
         password: pass,
         isEmailConfirmed: false,
-        refresh_token: null
+        isOtpVerified: false,
+        passwordResetOTP: null,
+        refresh_token: null,
+        role: 'user'
       })
 
       if (user) {
         const data = await this.createToken(user);
         await this.updateRefreshTokenByEmail(user.email, data.refresh_token)
-        return data;
+        const originalData = data
+        const convertedData: ConvertedData = {
+          user: {
+            userId: originalData?.userId,
+            email: originalData?.email,
+            role: originalData?.role
+          },
+          access_token: originalData?.access_token,
+          refresh_token: originalData?.refresh_token,
+          access_token_expires_at: originalData?.access_token_expires_at,
+          refresh_token_expires_at: originalData?.refresh_token_expires_at
+        }
+
+        return convertedData;
       }
 
     } catch (err) { }
@@ -90,6 +142,67 @@ export class AuthService {
     return tokens;
   }
 
+
+  async changeNewPassword({ email, newPassword, confirmNewPassword }: UserChangePasswordDto) {
+    try {
+
+      if (newPassword !== confirmNewPassword) {
+        throw new BadRequestException('New password and confirmation do not match');
+      }
+
+      const pass = await this.hashPassword(newPassword)
+
+      const user = await this.authRepository.findOne({ email });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.passwordResetOTP !== null) {
+        throw new NotFoundException('Something went wrong');
+      }
+
+      if (!user.isOtpVerified) {
+        throw new NotFoundException('Something went wrong');
+      }
+
+      await this.authRepository.findOneAndUpdate({ email }, {
+        $set: { password: pass }
+      });
+
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      } else if (error instanceof NotFoundException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException('Password change failed');
+      }
+    }
+  }
+
+
+
+  async logout() {
+
+    const access_token_expires_at = new Date();
+    access_token_expires_at.setSeconds(
+      access_token_expires_at.getSeconds() - 1
+    );
+
+    const refresh_token_expires_at = new Date();
+    refresh_token_expires_at.setTime(refresh_token_expires_at.getTime() - 1000);
+
+    const response = {
+      access_token: "",
+      refresh_token: "",
+      access_token_expires_at,
+      refresh_token_expires_at
+    }
+
+    return response;
+  }
 
 
   // from refresh_jwt strategy
@@ -197,6 +310,7 @@ export class AuthService {
       user = await this.authRepository.findOne({
         email: request.email,
       })
+
     } catch (err) { }
 
     if (user) {

@@ -14,7 +14,15 @@ export class AccessTokenJwtStrategy extends PassportStrategy(Strategy, "jwt") {
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (request: any) => {
-                    let data = request?.cookies["access_token"];
+
+                    let tokens = request?.body?.reqHeaders?.cookie.split(';');
+                    let data;
+                    for (const token of tokens) {
+                        if (token.startsWith('access_token=')) {
+                            data = token.substring('access_token='.length)
+                            break;
+                        }
+                    }
                     if (!data) {
                         return null;
                     }
@@ -22,15 +30,16 @@ export class AccessTokenJwtStrategy extends PassportStrategy(Strategy, "jwt") {
                 },
             ]),
             secretOrKey: configService.get('JWT_ACCESS_TOKEN_SECRET'),
-            passReqToCallback: true,
         });
     }
     async validate(req: any, payload: any) {
-        const accessToken = req?.cookies["access_token"];
+        console.log(payload, "payload");
+
+        // let accessToken = req?.body?.reqHeaders?.cookie.split('=')[1];
         const user = await this.authService.validateJwtPayload(payload);
         if (!user) {
             throw new UnauthorizedException();
         }
-        return {user,accessToken};
+        return user;
     }
 }

@@ -18,6 +18,9 @@ export class User extends AbstractDocument {
     isEmailConfirmed: boolean;
 
     @Prop()
+    isOtpVerified: boolean;
+
+    @Prop()
     password: string;
 
     @Prop()
@@ -27,9 +30,12 @@ export class User extends AbstractDocument {
     lastName: string
 
     @Prop({ default: null })
+    passwordResetOTP: number
+
+    @Prop({ default: null })
     refresh_token: string
 
-    @Prop({ type: String, enum: Object.values(UserRole) })
+    @Prop({ type: String, enum: Object.values(UserRole), default: "user" })
     role: string
 }
 
