@@ -36,6 +36,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/cloud-gateway/tsconfig.app.json"
       }
+    },
+    "user": {
+      "type": "application",
+      "root": "apps/user",
+      "entryFile": "main",
+      "sourceRoot": "apps/user/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/user/tsconfig.app.json"
+      }
     }
   }
 }
