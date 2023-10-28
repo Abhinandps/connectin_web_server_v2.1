@@ -33,6 +33,15 @@ export class UserController {
     })
   }
 
+  @Get('user')
+  async getAllRoleUsers(@Response() res) {
+    const response = await this.userService.getAllRoleUsers();
+    return res.status(200).json({
+      result: response.length,
+      data: response
+    })
+  }
+
 
   @Get(':userID')
   async getUserProfile(@Response() res, @Param('userID') userID: string) {
@@ -72,8 +81,11 @@ export class UserController {
 
   @Get(':id/search-suggestion')
   async search(@Query('query') query: string, @Response() res) {
+
     const response = await this.userService.search(query);
-    return res.send(response)
+    return res.status(200).json({
+      data: response
+    })
   }
 
 

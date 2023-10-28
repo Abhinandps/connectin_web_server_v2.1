@@ -72,17 +72,21 @@ export class UserService {
 
       const data = response.data
 
+
+
+
       // Get the IDs of the admins from the response.
       const adminIds = data.map((admin) => admin._id);
 
       const adminObjectIds = adminIds.map((adminId) => new Types.ObjectId(adminId));
+
 
       // Find the details of the admins using the IDs.
       const adminDetails = (await this.userRepository.find({ userId: { $in: adminObjectIds } }))
         .map(async (admin) => {
           const email = data.find((user) => user._id === admin.userId.toString()).email;
           return {
-            _id: admin._id,
+            _id: admin.userId,
             email,
             firstName: admin.firstName,
             lastName: admin.lastName,
@@ -100,7 +104,7 @@ export class UserService {
   }
 
 
-  private async getAllRoleUsers() {
+  public async getAllRoleUsers() {
     const serviceURL = `${this.configService.get('AUTH_SERVICE_URI')}/get_all_role_users`;
 
     const response = await axios({
@@ -127,7 +131,7 @@ export class UserService {
         const email = data.find((item) => item._id === user.userId.toString()).email;
 
         return {
-          _id: user._id,
+          _id: user.userId,
           email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -137,7 +141,7 @@ export class UserService {
 
       });
 
-    // console.log(await Promise.all(userDetails));
+    console.log(await Promise.all(userDetails));
     return await Promise.all(userDetails);
   } catch(err) {
     throw new BadRequestException(err)
@@ -147,6 +151,7 @@ export class UserService {
   // search
 
   async search(query: string) {
+
     const regexPattern = new RegExp(query, 'i');
 
     // const filterQuery = {
