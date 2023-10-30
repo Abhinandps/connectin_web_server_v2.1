@@ -6,7 +6,7 @@ import { KafkaService } from "./kafka.service";
 
 interface KafkaModuleOptions {
     name: string;
-    transport: Transport;
+    transport?: Transport;
 }
 
 @Module({
@@ -18,6 +18,22 @@ export class KafkaModule {
     static register({ name }: KafkaModuleOptions): DynamicModule {
         return {
             module: KafkaModule,
+            imports: [
+                ClientsModule.register([
+                    {
+                        name: `${name}_SERVICE`,
+                        transport: Transport.KAFKA,
+                        options: {
+                            client: {
+                                brokers: ['localhost:9092'],
+                            },
+                            consumer: {
+                                groupId: `${name}-CONSUMER`,
+                            },
+                        },
+                    },
+                ])
+            ],
             providers: [
                 {
                     provide: 'KAFKA_OPTIONS',
@@ -28,23 +44,15 @@ export class KafkaModule {
                                 brokers: [configService.get<string>('KAFKA_BROKER_URL')],
                             },
                             consumer: {
-                                groupId: configService.get<string>(`${name}-CONSUMER    `),
+                                groupId: configService.get<string>(`${name}-CONSUMER`),
                             },
                         },
                     }),
                     inject: [ConfigService],
                 }
             ],
-            // exports: [ClientsModule]
+            exports: [ClientsModule]
         };
     }
 }
 
-
-
-// ClientsModule.registerAsync([
-                //     {
-                //         name,
-
-                //     },
-                // ]),

@@ -4,12 +4,12 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser'
 import { KafkaOptions, MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { KafkaService } from '@app/common';
-import { createProxyMiddleware } from 'http-proxy-middleware';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthModule);
-  // const kafkaService = app.get<KafkaService>(KafkaService)
+  const kafkaService = app.get<KafkaService>(KafkaService)
+  app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('AUTH'));
   app.use(cookieParser())
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors({
@@ -18,7 +18,6 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  // app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('AUTH'));
   await app.startAllMicroservices();
   await app.listen(configService.get('PORT'));
 }

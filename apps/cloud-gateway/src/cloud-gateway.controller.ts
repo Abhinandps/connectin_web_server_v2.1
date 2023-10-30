@@ -1,4 +1,4 @@
-import { All, Controller, Get, Post, Request, Response } from '@nestjs/common';
+import { All, Controller, Get, Post, Query, Request, Response } from '@nestjs/common';
 import { CloudGatewayService } from './cloud-gateway.service';
 
 @Controller()
@@ -37,6 +37,12 @@ export class CloudGatewayController {
     }
 
     res.send(response)
+  }
+
+  @All('users/*')
+  async handleAllUsersRequest(@Request() req, @Response() res) {
+    const response = await this.cloudGatewayService.forwardUsersRequest(req.path, req.method, req?.headers, req.body, req?.query);
+    res.send(response.data);
   }
 
 }

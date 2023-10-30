@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserRequest, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
@@ -6,6 +6,9 @@ import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt'
 import { User } from './schemas/user.schema';
 import { ObjectId } from 'mongoose';
+import { USER_SERVICE } from './constant/services';
+import { ClientKafka } from '@nestjs/microservices';
+import { UserCreatedEvent } from './dto/user-created.event';
 
 
 export interface JwtPayload {
@@ -37,6 +40,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject(USER_SERVICE) private readonly userClient: ClientKafka
   ) { }
 
 
@@ -85,7 +89,6 @@ export class AuthService {
     await this.validateCreateUserRequest(userInput)
     const pass = await this.hashPassword(userInput.password)
     try {
-
       const user = await this.authRepository.create({
         ...userInput,
         email: userInput?.email?.toLowerCase(),
@@ -100,6 +103,8 @@ export class AuthService {
       })
 
       if (user) {
+        this.userClient.emit('create_user', new UserCreatedEvent(user._id.toString(), user.firstName, user.lastName))
+
         const data = await this.createToken(user);
         await this.updateRefreshTokenByEmail(user.email, data.refresh_token)
         const originalData = data
@@ -142,7 +147,6 @@ export class AuthService {
     return tokens;
   }
 
-
   async changeNewPassword({ email, newPassword, confirmNewPassword }: UserChangePasswordDto) {
     try {
 
@@ -181,7 +185,6 @@ export class AuthService {
       }
     }
   }
-
 
 
   async logout() {
@@ -323,4 +326,112 @@ export class AuthService {
     return await bcrypt.compare(enteredPassword, dbPassword);
   }
 
+
+
+  // admin 
+
+  public async getModeratorIdsAndEmails(): Promise<{ _id: string; email: string }[] | any> {
+    const moderators = await this.authRepository.find({ role: "moderator" });
+    const moderatorIdsAndEmails = moderators.map((moderator) => {
+      return { _id: moderator._id, email: moderator.email };
+    });
+    return moderatorIdsAndEmails;
+  }
+
+  public async getUsersIdsAndEmails(): Promise<{ _id: string; email: string }[] | any> {
+    const users = await this.authRepository.find({ role: "user" });
+    const usersIdsAndEmails = users.map((user) => {
+      return { _id: user._id, email: user.email };
+    });
+    return usersIdsAndEmails;
+  }
+
+  public async addNewAdmin(userID: string): Promise<any> {
+
+    try {
+      // Validate the user ID.
+      if (!userID) {
+        throw new BadRequestException('Invalid user ID.');
+      }
+
+      // Find the user.
+      const user = await this.authRepository.findOne({ _id: userID });
+
+      // If the user does not exist, throw an error.
+      if (!user) {
+        throw new NotFoundException('User does not exist.');
+      }
+
+      // Check if the user already has the admin role.
+      if (user.role === 'moderator') {
+        throw new BadRequestException('User already has the admin role.');
+      }
+
+      // Update the user's role.
+      await this.authRepository.findOneAndUpdate({ _id: userID }, { $set: { role: 'moderator' } });
+
+      // Log the change.
+      // this.logger.info(`User ${userID} was granted the moderator role.`);
+
+      // Send a notification.
+      // this.notificationService.sendNotification({
+      //   type: 'new_moderator',
+      //   id: userID
+      // });
+
+      // Delete the user's password from the response.
+      delete user.password;
+
+      // Delete the user's refresh token from the response.
+      delete user.refresh_token;
+
+      // Return the user.
+      return user;
+    } catch (err) { }
+  }
+
+
+  public async removeAdmin(userID: string): Promise<any> {
+
+    try {
+      // Validate the user ID.
+      if (!userID) {
+        throw new BadRequestException('Invalid user ID.');
+      }
+
+      // Find the user.
+      const user = await this.authRepository.findOne({ _id: userID });
+
+      // If the user does not exist, throw an error.
+      if (!user) {
+        throw new NotFoundException('User does not exist.');
+      }
+
+      // Check if the user already has the admin role.
+      if (user.role === 'user') {
+        throw new BadRequestException('User already has the user role.');
+      }
+
+      // Update the user's role.
+      await this.authRepository.findOneAndUpdate({ _id: userID }, { $set: { role: 'user' } });
+
+      // Log the change.
+      // this.logger.info(`User ${userID} was granted the moderator role.`);
+
+      // Send a notification.
+      // this.notificationService.sendNotification({
+      //   type: 'new_moderator',
+      //   id: userID
+      // });
+
+      // Delete the user's password from the response.
+      delete user.password;
+
+      // Delete the user's refresh token from the response.
+      delete user.refresh_token;
+
+      // Return the user.
+      return user;
+    } catch (err) { }
+  }
 }

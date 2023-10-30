@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi'
-import { DatabaseModule, KafkaModule } from '@app/common';
+import { DatabaseModule, KafkaService } from '@app/common';
 import { AuthRepository } from './auth.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
@@ -14,10 +14,26 @@ import { AccessTokenJwtStrategy } from './strategies/access_jwt-strategy';
 import { EmailConfirmationController } from './emailConfirmation.controller';
 import { EmailConfirmationService } from './emailConfirmation.service';
 import EmailService from './email.service';
+import { USER_SERVICE } from './constant/services';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+
 
 @Module({
   imports: [
-    KafkaModule,
+    ClientsModule.register([
+      {
+        name: USER_SERVICE,
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+          },
+          consumer: {
+            groupId: `${USER_SERVICE}-consumer`
+          }
+        }
+      },
+    ]),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -48,8 +64,8 @@ import EmailService from './email.service';
     DatabaseModule
   ],
   controllers: [AuthController, EmailConfirmationController],
-  providers: [AuthService, AuthRepository, RefreshTokenJwtStrategy, AccessTokenJwtStrategy, EmailConfirmationService, EmailService],
+  providers: [AuthService, AuthRepository, RefreshTokenJwtStrategy, AccessTokenJwtStrategy, EmailConfirmationService, EmailService, KafkaService],
 })
 export class AuthModule {
- 
- }
+
+}

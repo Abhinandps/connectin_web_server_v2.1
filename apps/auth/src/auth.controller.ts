@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Post, Request, Response, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post, Request, Response, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserRequest, UserChangePasswordDto, UserOtpDto, UserResetDto, UserSignInDto } from './dto/auth-request.dto';
 import { RefreshTokenGuard } from './guards/refresh_token.guard';
@@ -22,8 +22,6 @@ export class AuthController {
     await this.emailConfirmationService.sendVerificationLink(response?.user?.email, response.refresh_token)
     return res.send(response)
   }
-
-
 
   @Post('/login')
   public async login(
@@ -96,5 +94,31 @@ export class AuthController {
       role: user.role
     })
   }
+
+  // admin 
+
+  @Get('/get_all_admin')
+  async getAllAdmins() {
+    return await this.authService.getModeratorIdsAndEmails()
+  }
+
+  @Get('/get_all_role_users')
+  async getAllRoleUsers() {
+    return await this.authService.getUsersIdsAndEmails()
+  }
+
+  @Post(':userID/add-admin')
+  async addAdmin(@Response() res, @Param('userID') userID: string) {
+    await this.authService.addNewAdmin(userID)
+    return res.status(200).json({ message: 'success' })
+  }
+
+
+  @Post(':userID/remove-admin')
+  async removeAdmin(@Response() res, @Param('userID') userID: string) {
+    await this.authService.removeAdmin(userID)
+    return res.status(200).json({ message: 'success' })
+  }
+
 
 }
