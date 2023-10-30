@@ -110,14 +110,14 @@ export class AuthController {
   @Post(':userID/add-admin')
   async addAdmin(@Response() res, @Param('userID') userID: string) {
     await this.authService.addNewAdmin(userID)
-    return res.status(200).json('Success')
+    return res.status(200).json({ message: 'success' })
   }
 
 
   @Post(':userID/remove-admin')
   async removeAdmin(@Response() res, @Param('userID') userID: string) {
     await this.authService.removeAdmin(userID)
-    return res.status(200).json('Success')
+    return res.status(200).json({ message: 'success' })
   }
 
 
