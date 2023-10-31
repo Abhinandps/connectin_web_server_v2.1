@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Logger, Param, Post, Request, Response, UseGuards } from '@nestjs/common';
+import { Body, Controller, ExecutionContext, Get, Logger, Param, Post, Request, Response, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserRequest, UserChangePasswordDto, UserOtpDto, UserResetDto, UserSignInDto } from './dto/auth-request.dto';
 import { RefreshTokenGuard } from './guards/refresh_token.guard';
 import { AccessTokenGuard } from './guards/access_token_guard';
 import { EmailConfirmationService } from './emailConfirmation.service';
+import { EventPattern, MessagePattern } from '@nestjs/microservices';
+import { User } from './schemas/user.schema';
+import { CurrentUser } from './current-user.decorator';
 
 @Controller('api/v1/auth')
 export class AuthController {
@@ -11,6 +14,24 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly emailConfirmationService: EmailConfirmationService
   ) { }
+
+
+  @MessagePattern('test-kafka-topic')
+  async handleTestKafkaMessage(data: any): Promise<string> {
+    // Handle the test Kafka message
+    console.log('Received test Kafka message:', data);
+    return 'Test Kafka message sented back to post service.';
+  }
+
+  
+  @UseGuards(RefreshTokenGuard)
+  @MessagePattern('validate_user')
+  async validateUser(@CurrentUser() user: User) {
+    console.log(user,"reached");
+    
+    return user;
+  }
+
 
   @Post('/register')
   public async createUser(
@@ -22,6 +43,7 @@ export class AuthController {
     await this.emailConfirmationService.sendVerificationLink(response?.user?.email, response.refresh_token)
     return res.send(response)
   }
+
 
   @Post('/login')
   public async login(
@@ -83,6 +105,7 @@ export class AuthController {
     // })
     return res.send(response)
   }
+
 
   @UseGuards(RefreshTokenGuard)
   @Get('/validate-token')
