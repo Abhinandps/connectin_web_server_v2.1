@@ -5,7 +5,7 @@ import { CreateUserRequest, UserChangePasswordDto, UserSignInDto } from './dto/a
 import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt'
 import { User } from './schemas/user.schema';
-import { ObjectId } from 'mongoose';
+import { ObjectId, SaveOptions } from 'mongoose';
 import { USER_SERVICE } from './constant/services';
 import { ClientKafka } from '@nestjs/microservices';
 import { UserCreatedEvent } from './dto/user-created.event';
@@ -99,7 +99,10 @@ export class AuthService {
         isOtpVerified: false,
         passwordResetOTP: null,
         refresh_token: null,
-        role: 'user'
+        role: 'user',
+        save: function (options: SaveOptions) {
+          throw new Error('Function not implemented.');
+        }
       })
 
       if (user) {

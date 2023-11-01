@@ -135,16 +135,22 @@ export class JwtAuthGuard implements CanActivate {
 
     private getCookies(request: any): any {
 
-        const cookies = request.cookie.split('; ');
+        if (request.cookie) {
+            const cookies = request.cookie.split('; ');
 
-        const cookieMap = {};
+            const cookieMap = {};
 
-        for (const cookie of cookies) {
-            const [name, value] = cookie.split('=');
-            cookieMap[name] = value;
+            for (const cookie of cookies) {
+                const [name, value] = cookie.split('=');
+                cookieMap[name] = value;
+            }
+
+            return cookieMap;
+        } else {
+            throw new UnauthorizedException();
         }
 
-        return cookieMap;
+
     }
 
     private addUser(user: any, context: ExecutionContext) {

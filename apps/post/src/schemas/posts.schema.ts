@@ -16,11 +16,18 @@ export class Creator {
 
     @Prop({ default: null })
     profileImage: string;
+
+    @Prop({ default: null })
+    headline: string;
 }
 
 
 @Schema({ timestamps: true })
-export class Comments extends AbstractDocument {
+export class Comments {
+
+    @Prop()
+    _id: string
+
     @Prop(Creator)
     creator: Creator
 
@@ -30,7 +37,7 @@ export class Comments extends AbstractDocument {
     @Prop()
     replies: Comments[]
 
-    @Prop()
+    @Prop({ default: 0 })
     likes: number
 
 }
@@ -73,6 +80,8 @@ export class Post extends AbstractDocument {
 
 }
 
+
+export const PostSchema = SchemaFactory.createForClass(Post)
 
 
 

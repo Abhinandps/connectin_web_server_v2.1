@@ -19,8 +19,8 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (request: any) => {
                     let data;
-                    if (request?.body?.reqHeaders) {
-                        let tokens = request?.body?.reqHeaders?.cookie.split('; ');
+                    if (request?.body?.reqHeaders?.cookie) {
+                        let tokens = request?.body?.reqHeaders?.cookie?.split('; ');
 
                         for (const token of tokens) {
                             // console.log(token);
@@ -46,7 +46,7 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         });
     }
     async validate(req: any, payload: any) {
-        const refreshToken = req?.body?.reqHeaders?.cookie.split('=')[1];
+        const refreshToken = req?.body?.reqHeaders?.cookie?.split('=')[1];
 
         const user = await this.authService.validateJwtPayload(payload);
         if (!user) {

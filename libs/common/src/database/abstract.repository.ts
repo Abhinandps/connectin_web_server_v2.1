@@ -64,6 +64,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         return document;
     }
 
+
     async findOneAndUpdate(
         filterQuery: FilterQuery<TDocument>,
         update: UpdateQuery<TDocument>,
@@ -81,6 +82,21 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         return document;
     }
 
+    async findOneAndRemove(filterQuery: FilterQuery<TDocument>) {
+        const document = await this.model.findOneAndRemove(filterQuery, {
+            lean: true,
+        });
+
+        if (!document) {
+            this.logger.warn(`Document not found with filterQuery:`, filterQuery);
+            throw new NotFoundException('Document not found.');
+        }
+
+        return document;
+    }
+
+
+
     async upsert(
         filterQuery: FilterQuery<TDocument>,
         document: Partial<TDocument>,
@@ -91,6 +107,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
             new: true,
         });
     }
+
 
     async find(filterQuery: FilterQuery<TDocument>) {
         return this.model.find(filterQuery, {}, { lean: true });
@@ -105,9 +122,6 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     }
 
     // const posts = await postRepository.findAll({ createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, { sort: { createdAt: -1 }, paginateOptions: { page: 1, limit: 10 } });
-
-
-
 
     async startTransaction() {
         const session = await this.connection.startSession();

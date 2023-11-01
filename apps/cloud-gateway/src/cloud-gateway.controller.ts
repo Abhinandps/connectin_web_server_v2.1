@@ -51,7 +51,7 @@ export class CloudGatewayController {
   async handleAllPostsRequest(@Request() req, @Response() res) {
 
     const response = await this.cloudGatewayService.forwardPostsRequest(req.path, req.method, req?.headers, req.body, req?.query);
-    res.send(response.data);
+    res.send(response.data || response);
   }
 
 }

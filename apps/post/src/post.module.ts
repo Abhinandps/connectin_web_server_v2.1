@@ -3,14 +3,21 @@ import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { ConfigModule } from '@nestjs/config';
 import * as  Joi from 'joi';
-import { AUTH_SERVICE, AuthModule, CloudinaryMiddleware, JwtAuthGuard } from '@app/common';
+import { AUTH_SERVICE, AuthModule, CloudinaryMiddleware, DatabaseModule, JwtAuthGuard } from '@app/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-// import { EventEmitterModule } from '@nestjs/event-emitter';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Post, PostSchema } from './schemas/posts.schema';
+import { PostRepository } from './posts.repsitory';
+import { HashTag, HashTagSchema } from './schemas/hashTag.schema';
+import { HashTagRepository } from './hashTags.repository';
 
 @Module({
   imports: [
-    // EventEmitterModule.forRoot(),
     AuthModule,
+    MongooseModule.forFeature([
+      { name: Post.name, schema: PostSchema },
+      { name: HashTag.name, schema: HashTagSchema }
+    ]),
     ClientsModule.register([
       {
         name: AUTH_SERVICE,
@@ -32,10 +39,11 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         PORT: Joi.string().required()
       }),
       envFilePath: './apps/post/.env'
-    })
+    }),
+    DatabaseModule
   ],
   controllers: [PostController],
-  providers: [PostService],
+  providers: [PostService, PostRepository, HashTagRepository],
 })
 
 export class PostModule implements NestModule {
