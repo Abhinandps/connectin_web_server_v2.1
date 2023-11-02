@@ -55,6 +55,159 @@ export class UserService {
   // Update profiles
 
 
+  // hashtag management
+  async toggleFollowHashtag(request: any, { _id }: any, res: any) {
+
+    try {
+      const { hashtag } = request
+      // check the user 
+      const user = await this.getUser(_id)
+
+      if (!user) {
+        throw new BadRequestException('user not found')
+      }
+
+      const followedHashTags = user.followed_hashtags || []
+
+      let updateQuery: Partial<User> = { followed_hashtags: user.followed_hashtags || [] };
+
+      const hashtagIndex = followedHashTags.indexOf(hashtag);
+      if (hashtagIndex !== -1) {
+        // The hashtag is in the list, so remove it.
+        updateQuery.followed_hashtags.splice(hashtagIndex, 1)
+        await this.decrementFollowerCount(hashtag, _id)
+      } else {
+        // The hashtag is not in the list, so add it.
+        updateQuery.followed_hashtags.push(hashtag)
+        await this.incrementFollowerCount(hashtag, _id)
+      }
+
+
+      await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(_id) }, updateQuery)
+
+      res.status(200).json({
+        message: `${hashtag} ${hashtagIndex !== -1 ? 'unfollowed' : 'followed'} successfully`,
+      });
+    } catch (err) {
+      throw new BadRequestException(err);
+    }
+
+  }
+
+
+  // increment
+  async incrementFollowerCount(hashtag: string, userId: string) {
+    try {
+      const updatedHashtag = hashtag.replace(/#/g, '') // remove hash
+      const serviceURL = `${this.configService.get('POST_SERVICE_URI')}/hashtags/incrementFollowerCount/${userId}/${updatedHashtag}`;
+      // const serviceURL = `http://localhost:3003/api/v1/posts/hashtags/incrementFollowerCount/${updatedHashtag}`;
+
+      const response = await axios({
+        method: 'POST',
+        url: serviceURL,
+        withCredentials: true
+      });
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+  // decrement
+  async decrementFollowerCount(hashtag: string, userId: string) {
+    try {
+      const updatedHashtag = hashtag.replace(/#/g, '') // remove hash
+      const serviceURL = `${this.configService.get('POST_SERVICE_URI')}/hashtags/decrementFollowerCount/${userId}/${updatedHashtag}`;
+      // const serviceURL = `http://localhost:3003/api/v1/posts/hashtags/incrementFollowerCount/${updatedHashtag}`;
+
+      const response = await axios({
+        method: 'POST',
+        url: serviceURL,
+        withCredentials: true
+      });
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+
+
+  // post event
+
+  // single post
+  async handleNewPostCreated({ userId, postId }: any, res: any) {
+    try {
+      const user = await this.getUser(userId)
+
+      if (!user) {
+        throw new BadRequestException('user not found')
+      }
+
+      const updateQuery: Partial<User> = { feed: user.feed || [] }
+
+      // prepend the id 
+      updateQuery.feed.unshift(postId)
+
+
+      // remove after 20 items
+      if (updateQuery.feed.length > 20) {
+        updateQuery.feed.splice(20, updateQuery.feed.length - 20);
+      }
+
+      // update it 
+      await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
+
+      res.status(200).json({
+        message: `Feed Added New Post : ${postId}`,
+        data: user?.feed
+      });
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+  // multiple posts from followed hashtag
+
+  async handleNewPostsFromFollowedHashTag({ userId, postIds }: any, res: any) {
+    const user = await this.getUser(userId)
+
+    if (!user) {
+      throw new BadRequestException('user not found')
+    }
+
+    const updateQuery: Partial<User> = { feed: user.feed || [] }
+
+    console.log(postIds)
+
+    postIds.forEach((id: any) => updateQuery.feed.push(id))
+
+    // update it 
+    await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
+
+  }
+
+
+  async handleRemovePostsFromUnFollowedHashTag({ userId, postIds }: any, res: any) {
+    const user = await this.getUser(userId)
+
+    if (!user) {
+      throw new BadRequestException('user not found')
+    }
+
+    console.log(postIds)
+
+    const updateQuery: Partial<User> = { feed: user.feed || [] }
+    updateQuery.feed = updateQuery.feed.filter((postId: any) => !postIds.includes(postId))
+
+    console.log(updateQuery.feed)
+
+    // update it 
+    await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
+
+  }
+
+
 
 
   // Admin 
@@ -190,7 +343,7 @@ export class UserService {
       });
 
       const data = response.data
-      
+
 
       return data
 

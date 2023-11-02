@@ -60,6 +60,15 @@ services:
 #   mongodb_master_data:
 #     driver: local
 
+  #  redis:
+  #   image: redis
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     -6379:6379
+    # volumes:
+    #   -./redis/data:/data
+
    kafdrop:
     image: obsidiandynamics/kafdrop
     restart: "no"

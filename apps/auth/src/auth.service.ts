@@ -1,11 +1,11 @@
-import { Injectable, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, ExecutionContext, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserRequest, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
 import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt'
 import { User } from './schemas/user.schema';
-import { ObjectId } from 'mongoose';
+import { ObjectId, SaveOptions } from 'mongoose';
 import { USER_SERVICE } from './constant/services';
 import { ClientKafka } from '@nestjs/microservices';
 import { UserCreatedEvent } from './dto/user-created.event';
@@ -99,7 +99,7 @@ export class AuthService {
         isOtpVerified: false,
         passwordResetOTP: null,
         refresh_token: null,
-        role: 'user'
+        role: 'user',
       })
 
       if (user) {

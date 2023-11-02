@@ -1,6 +1,7 @@
-import { BadRequestException, Query, Controller, Get, Param, Post, Put, Res, Response } from '@nestjs/common';
+import { BadRequestException, Query, Controller, Get, Param, Post, Put, Req, Res, Body, Response, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS } from '@app/common';
 
 @Controller('api/v1/users')
 export class UserController {
@@ -17,6 +18,26 @@ export class UserController {
   @EventPattern('create_user')
   async handleUserCreated(@Payload() data: any) {
     this.userService.createUser(data)
+  }
+
+  // Feed UptoDate
+
+  // New_Post
+  @MessagePattern(NEW_POST)
+  async handleNewPostCreated(@Payload() data: any, @Response() res) {
+    return await this.userService.handleNewPostCreated(data, res)
+  }
+
+  // New_Posts
+  @MessagePattern(HASHTAG_FOLLOWS)
+  async handleNewPostsFromFollowedHashTag(@Payload() data: any, @Response() res) {
+    return await this.userService.handleNewPostsFromFollowedHashTag(data, res)
+  }
+
+  // REMOVE POSTS FROM USER FEED WHEN HASHTAG UNFOLLOWS
+  @MessagePattern(HASHTAG_UNFOLLOWS)
+  async handleRemovePostsFromUnFollowedHashTag(@Payload() data: any, @Response() res) {
+    return await this.userService.handleRemovePostsFromUnFollowedHashTag(data, res)
   }
 
 
@@ -68,6 +89,16 @@ export class UserController {
   async updateUserProile(@Response() res, @Param('userID') userID: string) {
     // const response = await this.userService.updateProfile(userID);
   }
+
+
+  @UseGuards(JwtAuthGuard)
+  @Post('toggle-follow-hashtag')
+  async toggleFollowHashtag(@Body() request: any, @Req() req: any, @Response() res) {
+    return this.userService.toggleFollowHashtag(request, req.user, res)
+  }
+
+
+
 
   // admin 
 

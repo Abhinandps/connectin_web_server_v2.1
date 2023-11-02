@@ -18,17 +18,23 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (request: any) => {
-
-                    let tokens = request?.body?.reqHeaders?.cookie.split('; ');
                     let data;
-                    for (const token of tokens) {
-                        // console.log(token);
+                    if (request?.body?.reqHeaders?.cookie) {
+                        let tokens = request?.body?.reqHeaders?.cookie?.split('; ');
 
-                        if (token.startsWith('refresh_token=')) {
-                            data = token.substring('refresh_token='.length)
-                            break;
+                        for (const token of tokens) {
+                            // console.log(token);
+
+                            if (token.startsWith('refresh_token=')) {
+                                data = token.substring('refresh_token='.length)
+                                break;
+                            }
                         }
+                    } else if (request?.Authentication) {
+                        // check for microservice token verification
+                        data = request?.Authentication
                     }
+
                     if (!data) {
                         return null;
                     }
@@ -40,7 +46,7 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         });
     }
     async validate(req: any, payload: any) {
-        const refreshToken = req?.body?.reqHeaders?.cookie.split('=')[1];
+        const refreshToken = req?.body?.reqHeaders?.cookie?.split('=')[1];
 
         const user = await this.authService.validateJwtPayload(payload);
         if (!user) {
@@ -49,3 +55,6 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         return { ...user, refresh_token: refreshToken };
     }
 }
+
+
+

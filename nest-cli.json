@@ -45,6 +45,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/user/tsconfig.app.json"
       }
+    },
+    "post": {
+      "type": "application",
+      "root": "apps/post",
+      "entryFile": "main",
+      "sourceRoot": "apps/post/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/post/tsconfig.app.json"
+      }
     }
   }
 }

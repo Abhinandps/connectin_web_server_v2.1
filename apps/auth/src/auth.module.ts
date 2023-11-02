@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi'
-import { DatabaseModule, KafkaService } from '@app/common';
+import { DatabaseModule, KafkaService ,} from '@app/common';
 import { AuthRepository } from './auth.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
