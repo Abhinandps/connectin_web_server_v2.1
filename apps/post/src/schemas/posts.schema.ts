@@ -34,7 +34,7 @@ export class Comments {
     @Prop()
     content: string;
 
-    @Prop()
+    @Prop({ default: [] })
     replies: Comments[]
 
     @Prop({ default: 0 })
@@ -44,7 +44,7 @@ export class Comments {
 
 
 @Schema({ timestamps: true })
-export class Likes extends AbstractDocument {
+export class Likes  {
     @Prop(Creator)
     creator: Creator
 

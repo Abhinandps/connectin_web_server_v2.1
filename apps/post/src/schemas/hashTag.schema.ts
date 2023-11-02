@@ -14,6 +14,9 @@ export class HashTag extends AbstractDocument {
     @Prop({ type: [{ type: Types.ObjectId, ref: 'Post' }], default: [] })
     posts: string[];
 
+    @Prop({ default: 0 })
+    followers: number
+
     @Prop({ type: Types.ObjectId, ref: 'User' })
     creator: string;
 

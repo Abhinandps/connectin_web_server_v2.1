@@ -100,9 +100,6 @@ export class AuthService {
         passwordResetOTP: null,
         refresh_token: null,
         role: 'user',
-        save: function (options: SaveOptions) {
-          throw new Error('Function not implemented.');
-        }
       })
 
       if (user) {

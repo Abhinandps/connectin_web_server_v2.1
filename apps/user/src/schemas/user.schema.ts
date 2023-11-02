@@ -41,6 +41,9 @@ export class User extends AbstractDocument {
     @Prop({ default: null })
     coverImage: string;
 
+    @Prop([Types.ObjectId])
+    feed: Types.ObjectId[]
+
     @Prop({ type: [{ type: Types.ObjectId, ref: 'Education' }] })
     education: Types.ObjectId[];
 
@@ -82,6 +85,11 @@ export class User extends AbstractDocument {
 
     @Prop([Types.ObjectId])
     connections: Types.ObjectId[]
+
+    @Prop([String])
+    followed_hashtags: String[]
+
+
 
 }
 

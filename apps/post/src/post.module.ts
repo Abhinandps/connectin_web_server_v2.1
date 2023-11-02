@@ -10,6 +10,7 @@ import { Post, PostSchema } from './schemas/posts.schema';
 import { PostRepository } from './posts.repsitory';
 import { HashTag, HashTagSchema } from './schemas/hashTag.schema';
 import { HashTagRepository } from './hashTags.repository';
+import { USER_SERVICE } from './constant/services';
 
 @Module({
   imports: [
@@ -28,6 +29,18 @@ import { HashTagRepository } from './hashTags.repository';
           },
           consumer: {
             groupId: `${AUTH_SERVICE}-consumer`
+          }
+        }
+      },
+      {
+        name: USER_SERVICE,
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+          },
+          consumer: {
+            groupId: `${USER_SERVICE}-consumer`
           }
         }
       },

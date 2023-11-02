@@ -1,4 +1,4 @@
-import { AUTH_SERVICE } from '@app/common';
+import { AUTH_SERVICE, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS } from '@app/common';
 import { Injectable, Inject, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { CreatePostDto } from './dto/post.dto';
@@ -9,12 +9,15 @@ import { Post } from './schemas/posts.schema';
 import { HashTagRepository } from './hashTags.repository';
 import { SaveOptions } from 'mongoose';
 import { repl } from '@nestjs/core';
+import { HashTag } from './schemas/hashTag.schema';
+import { USER_SERVICE } from './constant/services';
 
 @Injectable()
 export class PostService {
 
   constructor(
     @Inject(AUTH_SERVICE) private authClient: ClientKafka,
+    @Inject(USER_SERVICE) private userClient: ClientKafka,
     private readonly configService: ConfigService,
     private readonly postRepository: PostRepository,
     private readonly hashTagRepository: HashTagRepository
@@ -25,6 +28,26 @@ export class PostService {
     return 'Hello World!';
   }
 
+
+  async getPost(postId: string, res: any) {
+    try {
+      // 1. find the post by post id 
+      const post = await this.postRepository.findOne({ _id: postId })
+
+      if (!post) {
+        // Handle the case where the post with the given ID doesn't exist.
+        throw new NotFoundException('Post not found');
+      }
+
+      res.status(200).json({
+        data: post
+      })
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+  
   async createPost(request: CreatePostDto, files: any, { _id }: any, res: any) {
 
     try {
@@ -50,14 +73,10 @@ export class PostService {
         attachments: files,
         comments: [],
         likes: [],
-        save: function (options: SaveOptions) {
-          throw new Error('Function not implemented.');
-        }
       })
 
       const hashtagsInContent = contentBody.match(/#\w+/g);
 
-      console.log(hashtagsInContent)
 
       // 3. find hash tag if it contais in content body and attach post to it
 
@@ -71,17 +90,23 @@ export class PostService {
             })
           } else {
             // 4. that hashtag not present in then create newone and attach post to it
-            const newHashtag = await this.hashTagRepository.create({
+            const newHashtag = await this.hashTagRepository.createPartial({
               name: hashtagText,
               posts: [response._id.toString()],
               creator: _id,
-              save: function (options: SaveOptions) {
-                throw new Error('Function not implemented.');
-              }
             });
           }
         }
       }
+
+      // 4. create an event to store in user feed
+
+      const data = {
+        postId: response._id,
+        userId: _id
+      }
+
+      await this.userClient.emit(NEW_POST, data)
 
       res.status(200).json({
         data: response
@@ -265,6 +290,8 @@ export class PostService {
   async createCommentsReply(postId: string, commentId: string, request: string, { _id }: any, res: any) {
     try {
 
+      const { text }: any = request
+
       // 1.fetch user data from user service based on _id
       const { firstName, lastName, profileImage, headline } = await this.getUserData(_id)
       // 2. find the post
@@ -299,7 +326,7 @@ export class PostService {
           profileImage,
           headline
         },
-        content: request,
+        content: text,
         likes: 0
       }
 
@@ -321,6 +348,107 @@ export class PostService {
       throw new BadRequestException(err)
     }
 
+  }
+
+  async incrementHashTagFollowerCount(userId: string, hashtag: string, res: any) {
+    try {
+      const updatedHashTag = `#${hashtag}`
+      const existingHashTag = await this.hashTagRepository.findOne({ name: updatedHashTag })
+
+      if (!existingHashTag) {
+        throw new BadRequestException('hash tag not found')
+      }
+
+      let updateQuery: Partial<HashTag> = {};
+
+      updateQuery.followers = (updateQuery.followers || 0) + 1
+
+      await this.hashTagRepository.findOneAndUpdate({ name: updatedHashTag }, updateQuery)
+
+      const latestPostIds = await this.fetchLatestProductFromHashtag(existingHashTag.posts)
+
+      if (latestPostIds.length > 0) {
+
+        const data = {
+          postIds: latestPostIds,
+          userId: userId
+        }
+
+        await this.userClient.emit(HASHTAG_FOLLOWS, data)
+      }
+
+      res.status(200).json({
+        message: `Followed count : ${existingHashTag.followers}`,
+      });
+
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+  async decrementHashTagFollowerCount(userId: string, hashtag: string, res: any) {
+    try {
+      const updatedHashTag = `#${hashtag}`
+      const existingHashTag = await this.hashTagRepository.findOne({ name: updatedHashTag })
+
+      if (!existingHashTag) {
+        throw new BadRequestException('hash tag not found')
+      }
+
+      const postIdsOfHashTag = await this.fetchPostsIdsInHashTag(updatedHashTag)
+
+      const data = {
+        postIds: postIdsOfHashTag,
+        userId: userId
+      }
+
+      let updateQuery: Partial<HashTag> = { followers: existingHashTag.followers };
+
+      if (updateQuery.followers > 0) {
+        updateQuery.followers = updateQuery.followers - 1
+        console.log('hitted')
+        await this.userClient.emit(HASHTAG_UNFOLLOWS, data)
+      } else {
+        updateQuery.followers = 0
+      }
+
+
+      await this.hashTagRepository.findOneAndUpdate({ name: updatedHashTag }, updateQuery)
+
+
+
+      res.status(200).json({
+        message: `Followed count : ${existingHashTag.followers}`,
+      });
+
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+
+  // request to fetch the latest posts from hashtags
+
+  private async fetchLatestProductFromHashtag(postIds: any) {
+    const posts = await this.postRepository.find({ _id: { $in: postIds } })
+
+    posts.sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
+    const latestPosts = posts.slice(0, 5);
+
+    const latestPostIds = latestPosts.map((post) => post._id.toString());
+
+    return latestPostIds
+  }
+
+  // remove data from feed when unfollow hashtag
+
+  private async fetchPostsIdsInHashTag(hashTag: string) {
+    const hash_Tag = await this.hashTagRepository.findAll({ name: hashTag })
+    return hash_Tag[0].posts
   }
 
 
@@ -384,6 +512,8 @@ export class PostService {
 
     return customCommentId;
   }
+
+
 
 
 

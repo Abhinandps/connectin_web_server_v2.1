@@ -16,6 +16,13 @@ export class PostController {
     return this.postService.getHello();
   }
 
+
+  @Get(':postID')
+  async getPost(@Param('postID') postId: string, @Response() res) {
+    return await this.postService.getPost(postId, res)
+  }
+
+
   @UseGuards(JwtAuthGuard)
   @Post('create')
   @UseInterceptors(CloudinaryMiddleware)
@@ -58,14 +65,22 @@ export class PostController {
     return await this.postService.createCommentsReply(postId, commentId, request, req.user, res)
   }
 
-
   /* TODO: 
 
   1. update comments
   2. delete comments
-  3. update likes
+  3. update likes in comments
   */
 
+  @Post('/hashtags/incrementFollowerCount/:userId/:hashtag')
+  async incrementFollowerCount(@Param('userId') userId: string, @Param('hashtag') hashtag: string, @Req() req: any, @Response() res) {
+    return await this.postService.incrementHashTagFollowerCount(userId, hashtag, res)
+  }
+
+  @Post('/hashtags/decrementFollowerCount/:userId/:hashtag')
+  async decrementFollowerCount(@Param('userId') userId: string, @Param('hashtag') hashtag: string, @Response() res) {
+    return await this.postService.decrementHashTagFollowerCount(userId, hashtag, res)
+  }
 
   // @UseGuards(JwtAuthGuard)
   @Post('test-kafka')
