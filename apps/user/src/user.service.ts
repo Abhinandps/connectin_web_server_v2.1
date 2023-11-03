@@ -129,9 +129,6 @@ export class UserService {
     }
   }
 
-
-
-
   // post event
 
   // single post

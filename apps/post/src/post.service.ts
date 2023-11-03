@@ -47,7 +47,7 @@ export class PostService {
     }
   }
 
-  
+
   async createPost(request: CreatePostDto, files: any, { _id }: any, res: any) {
 
     try {
@@ -350,6 +350,26 @@ export class PostService {
 
   }
 
+  // report a post
+  async reportPost(postId: string, request: any, { _id }: any, res: any) {
+    try {
+      const serviceURL = `${this.configService.get('REPORT_SERVICE_URI')}/${postId}/report`;
+
+      const response = await axios({
+        method: 'POST',
+        url: serviceURL,
+        data: request,
+        withCredentials: true
+      });
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+
+
   async incrementHashTagFollowerCount(userId: string, hashtag: string, res: any) {
     try {
       const updatedHashTag = `#${hashtag}`
@@ -428,6 +448,9 @@ export class PostService {
       throw new BadRequestException(err)
     }
   }
+
+
+
 
 
 
