@@ -15,6 +15,8 @@ cloudinary.config({
 export const cloudinaryStorage = new CloudinaryStorage({
     cloudinary,
     params: (req, file) => {
+        console.log(req.body)
+        
         const isImage = file.mimetype.startsWith('image/');
         const isVideo = file.mimetype.startsWith('video/');
 

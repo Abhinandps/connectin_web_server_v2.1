@@ -23,15 +23,24 @@ export class AuthController {
     return 'Test Kafka message sented back to post service.';
   }
 
-  
+  // validate user approch one
   @UseGuards(RefreshTokenGuard)
   @MessagePattern('validate_user')
   async validateUser(@CurrentUser() user: User) {
-    console.log(user,"reached");
-    
+    console.log(user, "reached");
+
     return user;
   }
 
+
+  // validate user approch two
+  // @UseGuards(RefreshTokenGuard)
+  // @Post('validate_user')
+  // async validateUser(@Body() data:any) {
+  //   console.log('hitted 2',data)
+  //   // return user
+  // }
+  // @CurrentUser() user: User
 
   @Post('/register')
   public async createUser(

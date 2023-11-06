@@ -72,6 +72,18 @@ export class UserController {
     })
   }
 
+
+  @UseGuards(JwtAuthGuard)
+  @Get('user/feed')
+  async getUserFeed(@Response() res, @Req() req: any) {
+
+    const response = await this.userService.userFeed(req.user);
+    return res.status(200).json({
+      data: response
+    })
+  }
+
+
   // TODO:
   /*
     - profile image

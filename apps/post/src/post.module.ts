@@ -59,10 +59,12 @@ import { USER_SERVICE } from './constant/services';
   providers: [PostService, PostRepository, HashTagRepository],
 })
 
+
 export class PostModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CloudinaryMiddleware).forRoutes(
-      'test'
-    )
+    consumer.apply(CloudinaryMiddleware).forRoutes('api/v1/posts/utils/upload-files')
   }
 }
+
+
+

@@ -68,9 +68,12 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
+
+
 import { ClientKafka } from '@nestjs/microservices';
 import { catchError, Observable, tap } from 'rxjs';
 import { AUTH_SERVICE } from './services';
+import axios from 'axios';
 
 
 @Injectable()
@@ -84,21 +87,56 @@ export class JwtAuthGuard implements CanActivate {
     ): Promise<any>
     // boolean | Promise<boolean> | Observable<boolean>
     {
-        const authentication = this.getAuthentication(context);
 
-        this.authClient.subscribeToResponseOf('validate_user');
+        try {
+            const authentication = this.getAuthentication(context);
 
-        const response = await this.authClient.send('validate_user', {
-            Authentication: authentication,
-        }).toPromise();
+            this.authClient.subscribeToResponseOf('validate_user');
 
-        if (response) {
-            // If the response is valid, you can handle it, e.g., set user data in the request
-            this.addUser(response, context);
-            return true; // Continue with the request
-        } else {
-            throw new UnauthorizedException();
+            const response = await this.authClient.send('validate_user', {
+                Authentication: authentication,
+            }).toPromise();
+
+            // const response = await axios({
+            //     method: 'POST',
+            //     url: 'http://localhost:3001/api/v1/auth/validate_user',
+            //     data: authentication,
+            //     withCredentials: true
+            // });
+
+
+            if (response) {
+                this.addUser(response, context);
+                return true;
+            } else {
+                throw new UnauthorizedException('Invalid user');
+            }
+        } catch (error) {
+            // Handle errors gracefully, log them, and return an Unauthorized response
+            console.error('Error in JwtAuthGuard:', error);
+            // throw new UnauthorizedException('Authentication failed');
         }
+
+        // try{
+
+        // }catch(error){
+
+        // }
+        // const authentication = this.getAuthentication(context);
+
+        // await this.authClient.subscribeToResponseOf('validate_user');
+
+        // const response = await this.authClient.send('validate_user', {
+        //     Authentication: authentication,
+        // }).toPromise();
+
+        // if (response) {
+        //     // If the response is valid, you can handle it, e.g., set user data in the request
+        //     this.addUser(response, context);
+        //     return true; // Continue with the request
+        // } else {
+        //     throw new UnauthorizedException();
+        // }
 
         // return this.authClient
         //     .emit('validate_user', {
@@ -115,6 +153,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     private getAuthentication(context: ExecutionContext) {
+
         let authentication: string;
         if (context.getType() === 'rpc') {
             authentication = context.switchToRpc().getData().Authentication;

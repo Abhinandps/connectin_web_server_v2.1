@@ -6,7 +6,7 @@ import * as Joi from 'joi'
 import * as cookieParser from 'cookie-parser';
 import { HttpModule } from '@nestjs/axios';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AUTH_SERVICE, JwtAuthGuard, KafkaService } from '@app/common';
+import { AUTH_SERVICE, CloudinaryMiddleware, JwtAuthGuard, KafkaService } from '@app/common';
 
 @Module({
   imports: [
@@ -39,4 +39,12 @@ import { AUTH_SERVICE, JwtAuthGuard, KafkaService } from '@app/common';
   ],
 })
 
-export class CloudGatewayModule { }
+
+export class CloudGatewayModule 
+implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CloudinaryMiddleware).forRoutes('posts/utils/upload-files')
+  }
+}
+
+

@@ -81,6 +81,8 @@ export class CloudGatewayService {
   async forwardPostsRequest(path: string, method: string, reqHeaders?: any, data?: any, queryData?: string) {
 
     const { query }: any = queryData
+    
+
 
     const serviceURL = `${this.configService.get('POST_SERVICE_URI')}${path}`;
 
