@@ -149,8 +149,6 @@ export class JwtAuthGuard implements CanActivate {
         } else {
             throw new UnauthorizedException();
         }
-
-
     }
 
     private addUser(user: any, context: ExecutionContext) {

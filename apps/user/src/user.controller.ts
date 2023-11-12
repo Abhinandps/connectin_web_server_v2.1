@@ -9,12 +9,6 @@ export class UserController {
 
   // FIXME: remove unwanted code 
 
-  // @Get()
-  // getHello(): string {
-  //   return this.userService.getHello();
-  // }
-
-
   @EventPattern('create_user')
   async handleUserCreated(@Payload() data: any) {
     this.userService.createUser(data)
