@@ -42,6 +42,9 @@ export class AuthController {
   // }
   // @CurrentUser() user: User
 
+  //   return user;
+  // }
+
   @Post('/register')
   public async createUser(
     @Body() body: CreateUserRequest,
@@ -53,18 +56,17 @@ export class AuthController {
     return res.send(response)
   }
 
-
   @Post('/login')
   public async login(
-    @Body() body: UserSignInDto,
+    @Body() body: { data: UserSignInDto },
     @Request() req,
     @Response() res
   ) {
+    console.log(body.data)
+    const response = await this.authService.validateUserByPassword(body.data);
 
-    const response = await this.authService.validateUserByPassword(body);
-    return res.send(response)
+    return res.json(response)
   }
-
 
   @Post('request-password-reset')
   async forgotPassword(
@@ -73,7 +75,6 @@ export class AuthController {
     return await this.emailConfirmationService.sendOneTimePasswordByEmail(body?.email)
   }
 
-
   @Post('verify-request-reset')
   async verifyOTP(
     @Body() body: UserOtpDto,
@@ -81,7 +82,6 @@ export class AuthController {
   ) {
     return await this.emailConfirmationService.verifyOneTimePasswordByEmail(body?.email, body?.otp, res)
   }
-
 
   @Post('change-password')
   async changePassword(
@@ -112,8 +112,10 @@ export class AuthController {
     //   httpOnly: true,
     //   expires: response.access_token_expires_at
     // })
-    return res.send(response)
+
+    return res.json(response)
   }
+
 
 
   @UseGuards(RefreshTokenGuard)
