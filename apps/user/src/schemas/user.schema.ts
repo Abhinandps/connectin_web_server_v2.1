@@ -41,7 +41,7 @@ export class User extends AbstractDocument {
     @Prop({ default: null })
     coverImage: string;
 
-    @Prop([Types.ObjectId])
+    @Prop({ default: [Types.ObjectId] })
     feed: Types.ObjectId[]
 
     @Prop({ type: [{ type: Types.ObjectId, ref: 'Education' }] })

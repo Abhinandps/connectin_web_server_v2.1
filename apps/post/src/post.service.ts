@@ -29,6 +29,26 @@ export class PostService {
   }
 
 
+  async getAllPosts({ _id }: any, res: any) {
+    try {
+      // 1. find the post by post id 
+      const posts = await this.postRepository.find({ 'creator.userId': _id })
+
+      // if (posts.length < 1) {
+      //   // Handle the case where the post with the given ID doesn't exist.
+      //   throw new NotFoundException('Post not found');
+      // }
+
+      res.status(200).json({
+        data: posts || []
+      })
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+
   async getPost(postId: string, res: any) {
     try {
       // 1. find the post by post id 
@@ -47,12 +67,17 @@ export class PostService {
     }
   }
 
-  
-  async createPost(request: CreatePostDto, files: any, { _id }: any, res: any) {
+
+  async createPost(request: CreatePostDto, { _id }: any, res: any) {
 
     try {
 
-      const { contentType, title, contentBody } = request
+      const { contentType, title, contentBody, attachments } = request
+
+
+      if (!attachments) {
+        throw new BadRequestException('missing media files')
+      }
 
       // 1.fetch user data from user service based on _id
       const { firstName, lastName, profileImage, headline } = await this.getUserData(_id)
@@ -70,7 +95,7 @@ export class PostService {
         contentType,
         title,
         contentBody,
-        attachments: files,
+        attachments,
         comments: [],
         likes: [],
       })
@@ -156,8 +181,13 @@ export class PostService {
 
       await this.postRepository.findOneAndUpdate({ _id: postId }, updates)
 
+      const data = {
+        postId: post._id,
+        updates
+      }
       res.status(200).json({
         message: 'Post updated successfully',
+        data
       });
 
     } catch (err) {
@@ -193,8 +223,13 @@ export class PostService {
 
       await this.postRepository.findOneAndRemove({ _id: postId })
 
+      const data = {
+        postId: post._id
+      }
+
       res.status(200).json({
         message: 'Post deleted successfully',
+        data
       });
 
     } catch (err) {
@@ -250,7 +285,7 @@ export class PostService {
 
   async createComments(postId: string, request: string, { _id }: any, res: any) {
     try {
-      const { text }: any = request
+      const { content }: any = request
       // 1.fetch user data from user service based on _id
       const { firstName, lastName, profileImage, headline } = await this.getUserData(_id)
 
@@ -266,7 +301,7 @@ export class PostService {
           profileImage,
           headline
         },
-        content: text,
+        content,
         likes: 0
       }
 
@@ -274,11 +309,59 @@ export class PostService {
         $push: { comments: comment }
       };
 
+      console.log(comment)
 
-      await this.postRepository.findOneAndUpdate({ _id: postId }, updateQuery)
+
+      const updatedPost = await this.postRepository.findOneAndUpdate({ _id: postId }, updateQuery)
 
       res.status(200).json({
         message: `Post comment added successfully`,
+        data: comment
+      });
+
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+  async deleteComments(postId: string, commentId: string, { _id }: any, res: any) {
+    try {
+
+      const post = await this.postRepository.findOne({ _id: postId })
+
+      if (!post) {
+        throw new BadRequestException('post not found')
+      }
+
+      // Check if the requested comment exists
+      const commentIndex = post.comments.findIndex((comment) => comment._id === commentId);
+
+      if (commentIndex === -1) {
+        throw new NotFoundException('Comment not found');
+      }
+
+      const comment = post.comments[commentIndex];
+
+      // Check if the currentUser is the author of the comment
+      if (comment.creator.userId !== _id) {
+        throw new UnauthorizedException('You are not authorized to delete this comment');
+      }
+
+      // Remove the comment from the post
+      post.comments.splice(commentIndex, 1);
+
+      // Save the updated post to the database
+      await this.postRepository.findOneAndUpdate({ _id: postId }, post);
+
+      const data = {
+        commentId: comment._id,
+        postId: post._id
+      }
+
+      res.status(200).json({
+        message: `Post comment removed successfully`,
+        data
       });
 
 
@@ -349,6 +432,26 @@ export class PostService {
     }
 
   }
+
+  // report a post
+  async reportPost(postId: string, request: any, { _id }: any, res: any) {
+    try {
+      const serviceURL = `${this.configService.get('REPORT_SERVICE_URI')}/${postId}/report`;
+
+      const response = await axios({
+        method: 'POST',
+        url: serviceURL,
+        data: request,
+        withCredentials: true
+      });
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+
 
   async incrementHashTagFollowerCount(userId: string, hashtag: string, res: any) {
     try {
@@ -428,6 +531,9 @@ export class PostService {
       throw new BadRequestException(err)
     }
   }
+
+
+
 
 
 

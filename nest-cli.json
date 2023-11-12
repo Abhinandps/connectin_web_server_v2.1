@@ -54,6 +54,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/post/tsconfig.app.json"
       }
+    },
+    "analytics-reporting": {
+      "type": "application",
+      "root": "apps/analytics-reporting",
+      "entryFile": "main",
+      "sourceRoot": "apps/analytics-reporting/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/analytics-reporting/tsconfig.app.json"
+      }
     }
   }
 }

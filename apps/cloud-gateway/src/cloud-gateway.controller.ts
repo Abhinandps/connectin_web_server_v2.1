@@ -1,4 +1,4 @@
-import { All, Controller, Get, Post, Query, Request, Response, UseGuards } from '@nestjs/common';
+import { All, Controller, Get, Post, Query, Body, Request, Response, UseGuards, UploadedFiles } from '@nestjs/common';
 import { CloudGatewayService } from './cloud-gateway.service';
 import { JwtAuthGuard } from '@app/common';
 
@@ -48,9 +48,19 @@ export class CloudGatewayController {
 
 
   @All('posts/*')
-  async handleAllPostsRequest(@Request() req, @Response() res) {
+  async handleAllPostsRequest(@Body() request, @UploadedFiles() files, @Request() req, @Response() res) {
 
-    const response = await this.cloudGatewayService.forwardPostsRequest(req.path, req.method, req?.headers, req.body, req?.query);
+    const requestData = req.body;
+    const uploadedFiles = files
+    
+
+    const response = await this.cloudGatewayService.forwardPostsRequest(
+      req.path,
+      req.method,
+      req?.headers,
+      { ...requestData, files: uploadedFiles },
+      req?.query);
+
     res.send(response.data || response);
   }
 

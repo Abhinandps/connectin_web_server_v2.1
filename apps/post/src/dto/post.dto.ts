@@ -13,7 +13,6 @@ export class CreatePostDto {
     contentBody: string;
 
     @IsArray()
-    @IsOptional()
     attachments: string[];
 }
 

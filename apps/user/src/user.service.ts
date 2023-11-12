@@ -52,6 +52,46 @@ export class UserService {
     }
   }
 
+
+  // Get Feed
+
+  async userFeed( {_id} : any) {
+    try {
+      const user = await this.userRepository.findOne({ userId: new Types.ObjectId(_id) });
+      if (!user) {
+        throw new BadRequestException('no user found')
+      }
+
+      if (user.feed.length < 1) {
+        return []
+      }
+
+      const feedPromises = user.feed.map(async (pId: any) => {
+        const serviceURL = `${this.configService.get('POST_SERVICE_URI')}/${pId}`;
+        return axios({
+          method: 'GET',
+          url: serviceURL,
+          withCredentials: true,
+        });
+      });
+
+      const responses = await Promise.all(feedPromises);
+
+      const results = responses.map((response) => {
+        if (response.status === 200) {
+          return response.data.data;
+        } else {
+          return { error: 'Error occurred' };
+        }
+      })
+      return results
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+
   // Update profiles
 
 
@@ -129,9 +169,6 @@ export class UserService {
     }
   }
 
-
-
-
   // post event
 
   // single post
@@ -157,10 +194,6 @@ export class UserService {
       // update it 
       await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
 
-      res.status(200).json({
-        message: `Feed Added New Post : ${postId}`,
-        data: user?.feed
-      });
 
     } catch (err) {
       throw new BadRequestException(err)
