@@ -3,6 +3,7 @@ import { UserModule } from './user.module';
 import { ConfigService } from '@nestjs/config';
 import { KafkaService } from '@app/common';
 import { KafkaOptions } from '@nestjs/microservices'
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(UserModule);

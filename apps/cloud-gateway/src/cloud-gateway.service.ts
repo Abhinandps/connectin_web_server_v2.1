@@ -42,10 +42,12 @@ export class CloudGatewayService {
     body: any = null,
     query: any = {}
   ): Promise<AxiosResponse<any>> {
-    // console.log(`${serviceUrl}/${path}`)
-    // console.log(body)
-    // console.log(query)
-    const url = `${this.serviceRegistry.getServiceUrl(serviceUrl)}/${path}`;
+
+    const queryString = Object.keys(query)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
+      .join('&');
+
+    const url = `${this.serviceRegistry.getServiceUrl(serviceUrl)}/${path}?${queryString}`;
     console.log(`forwarding request to ${url}`)
 
     switch (method.toUpperCase()) {
@@ -74,7 +76,7 @@ export class CloudGatewayService {
 
 
 
-  
+
 
 
   // async forwardRequest(path: string, method: string, reqHeaders?: any, data?: any) {

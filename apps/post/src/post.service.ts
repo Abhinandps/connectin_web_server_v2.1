@@ -24,13 +24,11 @@ export class PostService {
   ) { }
 
 
-  getHello(): string {
-    return 'Hello World!';
-  }
 
 
-  async getAllPosts({ _id }: any, res: any) {
+  async getAllPosts(_id: any, res: any) {
     try {
+      console.log(_id)
       // 1. find the post by post id 
       const posts = await this.postRepository.find({ 'creator.userId': _id })
 
@@ -66,6 +64,7 @@ export class PostService {
       throw new BadRequestException(err)
     }
   }
+
 
 
   async createPost(request: CreatePostDto, { _id }: any, res: any) {
@@ -305,11 +304,13 @@ export class PostService {
         likes: 0
       }
 
+     
+
       const updateQuery = {
         $push: { comments: comment }
       };
 
-      console.log(comment)
+      
 
 
       const updatedPost = await this.postRepository.findOneAndUpdate({ _id: postId }, updateQuery)

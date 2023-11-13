@@ -1,29 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Param, UseInterceptors, UploadedFiles, UseGuards, Req, Body, Response, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, UseInterceptors, UploadedFiles, UseGuards, Req, Body, Response, UploadedFile, Query } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CloudinaryMiddleware, JwtAuthGuard } from '@app/common';
 import { CreatePostDto } from './dto/post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-// import { EventEmitter2 } from '@nestjs/event-emitter';
-// 'api/v1/posts'
 
 @Controller('api/v1/posts')
 export class PostController {
   constructor(
     private readonly postService: PostService,
-    // private readonly eventEmitter: EventEmitter2
   ) { }
 
-  // @Get()
-  // getHello(): string {
-  //   return this.postService.getHello();
-  // }
 
 
-  @UseGuards(JwtAuthGuard)
   @Get('all')
-  async getAllPosts(@Req() req: any, @Response() res) {
-    return await this.postService.getAllPosts(req.user, res)
+  async getAllPosts(@Query() query: any, @Req() req: any, @Response() res) {
+    const { _id } = query
+    return await this.postService.getAllPosts(_id, res)
   }
 
   @Get(':postID')
@@ -32,17 +25,17 @@ export class PostController {
   }
 
 
-  @UseGuards(JwtAuthGuard)
-  @Post('create')
   // @UseInterceptors(CloudinaryMiddleware)
-  async createPost(@Body() request: CreatePostDto, @Req() req: any, @Response() res) {
-    return await this.postService.createPost(request, req.user, res)
+  @Post('create')
+  async createPost(@Query() query: any, @Body() request: { data: CreatePostDto }, @Req() req: any, @Response() res) {
+    return await this.postService.createPost(request.data, query, res)
   }
 
   // @UploadedFiles() files,
 
   @Post('/utils/upload-files')
   async uploadFiles(@Req() req: any, @Response() res) {
+    console.log(req.body.files)
     const files = req.body.files
     const paths = files.map((file) => file.path);
 
@@ -51,44 +44,41 @@ export class PostController {
   }
 
 
-  @UseGuards(JwtAuthGuard)
   @Put('edit/:postID')
   // @UseInterceptors(CloudinaryMiddleware)
-  async updatePost(@Param('postID') postId: string, @Body() request, @Req() req: any, @Response() res) {
-    return await this.postService.editPost(postId, request, req.user, res)
+  async updatePost(@Query() query: any, @Param('postID') postId: string, @Body() request, @Req() req: any, @Response() res) {
+    return await this.postService.editPost(postId, request, query, res)
   }
 
 
-  @UseGuards(JwtAuthGuard)
+
   @Delete('delete/:postID')
-  // @UseInterceptors(CloudinaryMiddleware)
-  async removePost(@Param('postID') postId: string, @Body() request, @Req() req: any, @Response() res) {
-    return await this.postService.deletePost(postId, request, req.user, res)
+  async removePost(@Query() query: any, @Param('postID') postId: string, @Body() request, @Req() req: any, @Response() res) {
+    return await this.postService.deletePost(postId, request, query, res)
   }
 
 
-  @UseGuards(JwtAuthGuard)
   @Put('likes/:postID')
-  async addLikeToPost(@Param('postID') postId: string, @Req() req: any, @Response() res) {
-    return await this.postService.toggleLikeToPost(postId, req.user, res)
+  async addLikeToPost(@Query() query: any, @Param('postID') postId: string, @Req() req: any, @Response() res) {
+    return await this.postService.toggleLikeToPost(postId, query, res)
   }
 
-  @UseGuards(JwtAuthGuard)
+
   @Post('comment/:postID')
-  async createComments(@Param('postID') postId: string, @Body() request: string, @Req() req: any, @Response() res) {
-    return await this.postService.createComments(postId, request, req.user, res)
+  async createComments(@Query() query: any, @Param('postID') postId: string, @Body() request: { data: any }, @Req() req: any, @Response() res) {
+    return await this.postService.createComments(postId, request.data, query, res)
   }
 
-  @UseGuards(JwtAuthGuard)
+
   @Delete('comment/:postID/:commentID')
-  async deleteComments(@Param('postID') postId: string, @Param('commentID') commentId: string, @Req() req: any, @Response() res) {
-    return await this.postService.deleteComments(postId, commentId, req.user, res)
+  async deleteComments(@Query() query: any, @Param('postID') postId: string, @Param('commentID') commentId: string, @Req() req: any, @Response() res) {
+    return await this.postService.deleteComments(postId, commentId, query, res)
   }
 
-  @UseGuards(JwtAuthGuard)
+
   @Post('comment/:postID/:commendID/replies')
-  async createCommentsReply(@Param('postID') postId: string, @Param('commendID') commentId: string, @Body() request: string, @Req() req: any, @Response() res) {
-    return await this.postService.createCommentsReply(postId, commentId, request, req.user, res)
+  async createCommentsReply(@Query() query: any, @Param('postID') postId: string, @Param('commendID') commentId: string, @Body() request: string, @Req() req: any, @Response() res) {
+    return await this.postService.createCommentsReply(postId, commentId, request, query, res)
   }
 
   @UseGuards(JwtAuthGuard)

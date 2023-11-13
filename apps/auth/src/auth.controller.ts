@@ -33,18 +33,6 @@ export class AuthController {
   }
 
 
-  // validate user approch two
-  // @UseGuards(RefreshTokenGuard)
-  // @Post('validate_user')
-  // async validateUser(@Body() data:any) {
-  //   console.log('hitted 2',data)
-  //   // return user
-  // }
-  // @CurrentUser() user: User
-
-  //   return user;
-  // }
-
   @Post('/register')
   public async createUser(
     @Body() body: CreateUserRequest,

@@ -55,7 +55,7 @@ export class UserService {
 
   // Get Feed
 
-  async userFeed( {_id} : any) {
+  async userFeed(_id: any) {
     try {
       const user = await this.userRepository.findOne({ userId: new Types.ObjectId(_id) });
       if (!user) {

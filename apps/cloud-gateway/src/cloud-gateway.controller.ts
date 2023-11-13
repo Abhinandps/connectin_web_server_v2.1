@@ -1,4 +1,4 @@
-import { All, Controller, Get, HttpStatus, Param, Post, Query, Req, Request, Res, Response, UseGuards } from '@nestjs/common';
+import { All, Controller, Get, HttpStatus, UploadedFiles, Param, Post, Query, Req, Request, Res, Response, UseGuards } from '@nestjs/common';
 import { CloudGatewayService } from './cloud-gateway.service';
 import { JwtAuthGuard } from '@app/common';
 import { AccessTokenGuard } from './guards/access_token_guard';
@@ -13,14 +13,25 @@ export class CloudGatewayController {
 
   @UseGuards(DynamicRouteGuard)
   @All(':serviceName/*')
-  async forwardRequest(@Request() req, @Response() res) {
+  async forwardRequest(@Request() req, @Response() res, @UploadedFiles() files) {
 
     const serviceName = req.params.serviceName;
     const path = req.params[0];
     const method = req.method;
-    const body = { data: req.body, headers: req.headers };
-    const query = req.query;
-    const user = req.user;
+    const { userId, email, role, ...rest } = req?.user?.user || {};
+    const uploadedFiles = files
+    const body = { data: req.body, headers: req.headers, files: uploadedFiles };
+    const query = {
+      ...req.query,
+      ...(userId && { _id: userId }),
+      ...(email && { email }),
+      ...(role && { role })
+    };
+
+    console.log(body.data)
+
+
+
 
     try {
       const result = await this.cloudGatewayService.forwardRequest(serviceName, path, method, body, query);
@@ -51,7 +62,7 @@ export class CloudGatewayController {
 
       res.status(result.status).json(result.data);
     } catch (error) {
-      res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ error: error.toString() });
+      // res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ error: error.toString() });
     }
   }
 

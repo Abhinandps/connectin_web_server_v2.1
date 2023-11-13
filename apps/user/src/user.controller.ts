@@ -38,7 +38,6 @@ export class UserController {
   // TODO:
   // @Get('user-activity')
 
-
   @Get()
   async getAllUsers(@Response() res) {
     const response = await this.userService.getAllUsers();
@@ -47,6 +46,7 @@ export class UserController {
       data: response
     })
   }
+
 
   @Get('user')
   async getAllRoleUsers(@Response() res) {
@@ -67,11 +67,10 @@ export class UserController {
   }
 
 
-  @UseGuards(JwtAuthGuard)
   @Get('user/feed')
-  async getUserFeed(@Response() res, @Req() req: any) {
-
-    const response = await this.userService.userFeed(req.user);
+  async getUserFeed(@Query() query: any, @Response() res, @Req() req: any) {
+    const { _id } = query
+    const response = await this.userService.userFeed(_id);
     return res.status(200).json({
       data: response
     })

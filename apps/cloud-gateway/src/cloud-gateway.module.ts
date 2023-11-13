@@ -6,7 +6,7 @@ import * as Joi from 'joi'
 import * as cookieParser from 'cookie-parser';
 import { HttpModule } from '@nestjs/axios';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AUTH_SERVICE, JwtAuthGuard, KafkaService } from '@app/common';
+import { AUTH_SERVICE, CloudinaryMiddleware, JwtAuthGuard, KafkaService } from '@app/common';
 import { ServiceRegistryService } from './service-refistry.service';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
 import { APP_FILTER } from '@nestjs/core';
@@ -63,13 +63,27 @@ import { RefreshTokenJwtStrategy } from './strategies/refresh_jwt-strategy';
 })
 
 
-export class CloudGatewayModule {
+export class CloudGatewayModule implements NestModule {
   constructor(private serviceRegistry: ServiceRegistryService) {
     this.serviceRegistry.registerService({
       name: 'auth',
       urls: ['http://localhost:3001/api/v1/auth'],
       openRoutes: ['/login']
     });
+    this.serviceRegistry.registerService({
+      name: 'users',
+      urls: ['http://localhost:3002/api/v1/users'],
+      openRoutes: ['']
+    });
+    this.serviceRegistry.registerService({
+      name: 'posts',
+      urls: ['http://localhost:3003/api/v1/posts'],
+      openRoutes: ['/utils/upload-files']
+    });
+  }
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CloudinaryMiddleware).forRoutes('posts/utils/upload-files')
   }
 }
 
