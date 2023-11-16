@@ -63,6 +63,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/analytics-reporting/tsconfig.app.json"
       }
+    },
+    "payments": {
+      "type": "application",
+      "root": "apps/payments",
+      "entryFile": "main",
+      "sourceRoot": "apps/payments/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payments/tsconfig.app.json"
+      }
     }
   }
 }

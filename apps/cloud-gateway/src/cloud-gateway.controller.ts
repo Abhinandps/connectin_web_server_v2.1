@@ -28,13 +28,12 @@ export class CloudGatewayController {
       ...(role && { role })
     };
 
-    console.log(body.data)
-
 
 
 
     try {
       const result = await this.cloudGatewayService.forwardRequest(serviceName, path, method, body, query);
+
 
       const response = result.data
 
@@ -60,7 +59,7 @@ export class CloudGatewayController {
         });
       }
 
-      res.status(result.status).json(result.data);
+      res.status(result.status).json(result.data );
     } catch (error) {
       // res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ error: error.toString() });
     }
@@ -70,12 +69,14 @@ export class CloudGatewayController {
   @UseGuards(RefreshTokenGuard)
   @Get('/validate-token')
   public async fetchDataBasedOnToken(@Request() req, @Response() res) {
-    const user = req.user
+    const { user } = req.user
+
     return res.send({
-      _id: user._id,
+      _id: user.userId,
       email: user.email,
       role: user.role
     })
+
   }
 
 

@@ -6,6 +6,9 @@ import { KafkaOptions, Transport } from '@nestjs/microservices';
 
 @Injectable()
 export class KafkaService {
+    static getOptions(arg0: string): KafkaOptions {
+      throw new Error('Method not implemented.');
+    }
     public(arg0: string, arg1: { user: import("../../../../apps/auth/src/schemas/user.schema").User; }) {
       throw new Error('Method not implemented.');
     }

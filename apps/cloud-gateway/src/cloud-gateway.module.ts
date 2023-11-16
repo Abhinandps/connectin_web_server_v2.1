@@ -14,24 +14,11 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { AccessTokenJwtStrategy } from './strategies/access_jwt-strategy';
 import { RefreshTokenJwtStrategy } from './strategies/refresh_jwt-strategy';
+import { PAYMENT_SERVICE } from './constant/services';
 
 @Module({
   imports: [
     HttpModule,
-    // ClientsModule.register([
-    //   {
-    //     name: AUTH_SERVICE,
-    //     transport: Transport.KAFKA,
-    //     options: {
-    //       client: {
-    //         brokers: ['localhost:9092'],
-    //       },
-    //       consumer: {
-    //         groupId: `${AUTH_SERVICE}-consumer`
-    //       }
-    //     }
-    //   },
-    // ]),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -79,6 +66,11 @@ export class CloudGatewayModule implements NestModule {
       name: 'posts',
       urls: ['http://localhost:3003/api/v1/posts'],
       openRoutes: ['/utils/upload-files']
+    });
+    this.serviceRegistry.registerService({
+      name: 'payments',
+      urls: ['http://localhost:3005/api/v1/payments'],
+      openRoutes: ['/config']
     });
   }
 

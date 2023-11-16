@@ -1,1 +1,1 @@
-// export const CLOUD_SERVICE = 'CLOUD'
+export const PAYMENT_SERVICE = 'PAYMENT'

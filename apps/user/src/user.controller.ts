@@ -2,6 +2,8 @@ import { BadRequestException, Query, Controller, Get, Param, Post, Put, Req, Res
 import { UserService } from './user.service';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS } from '@app/common';
+import { CreateSubscriptionDto } from '@app/common/dto';
+
 
 @Controller('api/v1/users')
 export class UserController {
@@ -102,6 +104,20 @@ export class UserController {
     return this.userService.toggleFollowHashtag(request, req.user, res)
   }
 
+
+  // subscription
+
+  // @Post('create-subscription')
+  // async createSubscription(@Body() request: { data: CreateSubscriptionDto }, @Query() query: any, @Response() res) {
+  //   const { _id } = query
+  //   return await this.userService.createSubscription(request.data, _id, res)
+  // }
+
+
+  @MessagePattern('create_charge')
+  async handleCreateCharge(@Payload() data: any) {
+    return await this.userService.createSubscription(data)
+  }
 
 
 

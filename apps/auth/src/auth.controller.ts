@@ -110,7 +110,8 @@ export class AuthController {
   @Get('/validate-token')
   public async fetchDataBasedOnToken(@Request() req, @Response() res) {
     const user = req.user
-    return res.send({
+    console.log(user)
+    return res.json({
       _id: user._id,
       email: user.email,
       role: user.role

@@ -1,6 +1,6 @@
 import { AbstractDocument } from '@app/common';
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose'
-import { Types } from 'mongoose';
+import { Date, Types } from 'mongoose';
 
 @Schema()
 export class Language {
@@ -9,6 +9,25 @@ export class Language {
 
     @Prop()
     proficiency: string;
+}
+
+@Schema()
+export class Subscription {
+    @Prop()
+    billingCycle: string;
+
+    @Prop()
+    expiration: Date;
+
+    @Prop()
+    status: string;
+
+    @Prop()
+    invoiceId: string;
+
+    @Prop()
+    amount: number;
+
 }
 
 
@@ -80,8 +99,8 @@ export class User extends AbstractDocument {
     @Prop({ default: false })
     isPremium: boolean;
 
-    @Prop({ type: [{ type: Types.ObjectId, ref: 'Subscription' }] })
-    premium_subscription: Types.ObjectId[]
+    @Prop([Subscription])
+    premium_subscription: Subscription[]
 
     @Prop([Types.ObjectId])
     connections: Types.ObjectId[]

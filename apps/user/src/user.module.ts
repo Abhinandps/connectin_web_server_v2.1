@@ -10,7 +10,7 @@ import { Education, EducationSchema } from './schemas/education.schema';
 import { WorkExperience, WorkExperienceSchema } from './schemas/workexperience.schema';
 import { UserRepository } from './user.repository';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { USER_SERVICE } from './constant/services';
+import { PAYMENT_SERVICE, USER_SERVICE } from './constant/services';
 
 @Module({
   imports: [
@@ -30,6 +30,20 @@ import { USER_SERVICE } from './constant/services';
           },
           consumer: {
             groupId: `${AUTH_SERVICE}-consumer`
+          }
+        }
+      },
+    ]),
+    ClientsModule.register([
+      {
+        name: PAYMENT_SERVICE,
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+          },
+          consumer: {
+            groupId: `${PAYMENT_SERVICE}-consumer`
           }
         }
       },

@@ -5,12 +5,16 @@ import { Types } from 'mongoose';
 import { User } from './schemas/user.schema';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
+import { PAYMENT_SERVICE } from './constant/services';
+import { ClientKafka } from '@nestjs/microservices';
+import { CreateSubscriptionDto } from '@app/common/dto';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly configService: ConfigService,
+    @Inject(PAYMENT_SERVICE) private readonly paymentService: ClientKafka
   ) { }
 
   // getHello(): string {
@@ -157,7 +161,6 @@ export class UserService {
     try {
       const updatedHashtag = hashtag.replace(/#/g, '') // remove hash
       const serviceURL = `${this.configService.get('POST_SERVICE_URI')}/hashtags/decrementFollowerCount/${userId}/${updatedHashtag}`;
-      // const serviceURL = `http://localhost:3003/api/v1/posts/hashtags/incrementFollowerCount/${updatedHashtag}`;
 
       const response = await axios({
         method: 'POST',
@@ -239,6 +242,35 @@ export class UserService {
     await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
 
   }
+
+
+
+  // subscription
+
+  async createSubscription(data: any) {
+
+    try {
+
+      const user = await this.getUser(data.userId)
+
+      if (data.userId) {
+        const updateQuery: Partial<User> = { premium_subscription: user.premium_subscription || [] }
+
+        updateQuery.isPremium = true
+        updateQuery.premium_subscription.push(data)
+        // update it 
+        return await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(data.userId) }, updateQuery)
+      }
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+
+  }
+
+
+
+
 
 
 
