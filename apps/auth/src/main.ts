@@ -13,9 +13,9 @@ async function bootstrap() {
   app.use(cookieParser())
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: 'http://localhost:5173',
     credentials: true,
-  });
+  })
 
   const configService = app.get(ConfigService);
   await app.startAllMicroservices();

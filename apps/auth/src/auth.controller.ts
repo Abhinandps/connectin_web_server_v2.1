@@ -1,4 +1,4 @@
-import { Body, Controller, ExecutionContext, Get, Logger, Param, Post, Request, Response, UseGuards } from '@nestjs/common';
+import { Body, Controller, ExecutionContext, Get, Logger, Param, Post, Query, Request, Response, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserRequest, UserChangePasswordDto, UserOtpDto, UserResetDto, UserSignInDto } from './dto/auth-request.dto';
 import { RefreshTokenGuard } from './guards/refresh_token.guard';
@@ -95,6 +95,7 @@ export class AuthController {
   public async refreshToken(@Request() req, @Response() res) {
 
     const user = req.user;
+    console.log(user)
     const response = await this.authService.refreshToken(user)
     // res.cookie("access_token", response.access_token, {
     //   httpOnly: true,
@@ -125,10 +126,12 @@ export class AuthController {
     return await this.authService.getModeratorIdsAndEmails()
   }
 
+
   @Get('/get_all_role_users')
   async getAllRoleUsers() {
     return await this.authService.getUsersIdsAndEmails()
   }
+
 
   @Post(':userID/add-admin')
   async addAdmin(@Response() res, @Param('userID') userID: string) {
@@ -137,6 +140,7 @@ export class AuthController {
   }
 
 
+  
   @Post(':userID/remove-admin')
   async removeAdmin(@Response() res, @Param('userID') userID: string) {
     await this.authService.removeAdmin(userID)

@@ -11,6 +11,8 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
     Strategy,
     "jwt-refresh"
 ) {
+
+    private extractedData: string | null = null
     constructor(
         private readonly authService: AuthService,
         private readonly configService: ConfigService
@@ -18,26 +20,26 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (request: any) => {
-                    console.log(request.body)
-                    let data;
+
+
                     if (request?.body?.headers?.cookie) {
                         let tokens = request?.body?.headers?.cookie?.split('; ');
 
                         for (const token of tokens) {
                             if (token.startsWith('refresh_token=')) {
-                                data = token.substring('refresh_token='.length)
+                                this.extractedData = token.substring('refresh_token='.length)
                                 break;
                             }
                         }
                     } else if (request?.Authentication) {
                         // check for microservice token verification
-                        data = request?.Authentication
+                        this.extractedData = request?.Authentication
                     }
 
-                    if (!data) {
+                    if (!this.extractedData) {
                         return null;
                     }
-                    return data;
+                    return this.extractedData;
                 },
             ]),
             secretOrKey: configService.get('JWT_REFRESH_TOKEN_SECRET'),
@@ -45,7 +47,8 @@ export class RefreshTokenJwtStrategy extends PassportStrategy(
         });
     }
     async validate(req: any, payload: any) {
-        const refreshToken = req?.body?.headers?.cookie?.split('=')[1];
+
+        const refreshToken = this.extractedData
 
         const user = await this.authService.validateJwtPayload(payload);
         if (!user) {
