@@ -72,6 +72,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/payments/tsconfig.app.json"
       }
+    },
+    "jobs": {
+      "type": "application",
+      "root": "apps/jobs",
+      "entryFile": "main",
+      "sourceRoot": "apps/jobs/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/jobs/tsconfig.app.json"
+      }
     }
   }
 }

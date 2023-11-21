@@ -20,7 +20,8 @@ export class CloudGatewayController {
     const method = req.method;
     const { userId, email, role, ...rest } = req?.user?.user || {};
     const uploadedFiles = files
-    const body = { data: req.body, headers: req.headers, files: uploadedFiles };
+    let body = { data: req.body, headers: req.headers, files: uploadedFiles };
+
     const query = {
       ...req.query,
       ...(userId && { _id: userId }),
@@ -59,7 +60,7 @@ export class CloudGatewayController {
         });
       }
 
-      res.status(result.status).json(result.data );
+      res.status(result.status).json(result.data);
     } catch (error) {
       // res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ error: error.toString() });
     }
