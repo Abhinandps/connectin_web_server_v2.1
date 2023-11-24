@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Param, UseInterceptors, UploadedFiles, UseGuards, Req, Body, Response, UploadedFile, Query } from '@nestjs/common';
 import { PostService } from './post.service';
-import { CloudinaryMiddleware, JwtAuthGuard } from '@app/common';
+import { CloudinaryMiddleware, JwtAuthGuard, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
 import { CreatePostDto } from './dto/post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 
 @Controller('api/v1/posts')
@@ -11,6 +12,16 @@ export class PostController {
     private readonly postService: PostService,
   ) { }
 
+
+  @MessagePattern(USER_FOLLOWS)
+  async handleFollowedUserPost(@Payload() data: any, @Response() res) {
+    return await this.postService.handleFollowedUserPost(data, res)
+  }
+
+  @MessagePattern(USER_UNFOLLOWS)
+  async handleUnFollowedUserPost(@Payload() data: any, @Response() res) {
+    return await this.postService.handleUnFollowedUserPost(data, res)
+  }
 
 
   @Get('all')

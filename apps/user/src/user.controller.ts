@@ -1,8 +1,9 @@
-import { BadRequestException, Query, Controller, Get, Param, Post, Put, Req, Res, Body, Response, UseGuards } from '@nestjs/common';
+import { BadRequestException, Query, Controller, Get, Delete, Param, Post, Put, Req, Res, Body, Response, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
-import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS } from '@app/common';
+import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, USER_FOLLOWS, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
 import { CreateSubscriptionDto } from '@app/common/dto';
+import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
 
 
 @Controller('api/v1/users')
@@ -36,6 +37,16 @@ export class UserController {
     return await this.userService.handleRemovePostsFromUnFollowedHashTag(data, res)
   }
 
+  @MessagePattern(UPDATE_FEED_USER_FOLLOWS)
+  async handleFollowedUserPost(@Payload() data: any, @Response() res) {
+    return await this.userService.handleAddFollowedUserPostsInFeed(data, res)
+  }
+
+  @MessagePattern(UPDATE_FEED_USER_UNFOLLOWS)
+  async handleRemoveUnFollowedUserPostsInFeed(@Payload() data: any, @Response() res) {
+    return await this.userService.handleRemoveUnFollowedUserPostsInFeed(data, res)
+  }
+
 
   // TODO:
   // @Get('user-activity')
@@ -44,7 +55,7 @@ export class UserController {
   async getAllUsers(@Response() res) {
     const response = await this.userService.getAllUsers();
     return res.status(200).json({
-      result: response.length,
+      // result: response.length,
       data: response
     })
   }
@@ -89,13 +100,15 @@ export class UserController {
     - education
     - skills
     - interests
-
   */
 
-  @Put(':userID')
-  async updateUserProile(@Response() res, @Param('userID') userID: string) {
-    // const response = await this.userService.updateProfile(userID);
+  @Put('edit/basic-info')
+  async updateUserProile(@Query() query: any, @Response() res, @Body() requestData: UpdateUserDto) {
+    const { _id } = query;
+
+    return this.userService.updateUserProfile(_id, requestData.data)
   }
+
 
 
   @UseGuards(JwtAuthGuard)
@@ -120,6 +133,29 @@ export class UserController {
   }
 
 
+  // FOLLOW, CONNECT
+
+
+  @Post(':followingId/follow')
+  async follow(@Query() query: any, @Param('followingId') followingId: string) {
+    const { _id } = query;
+    return this.userService.follow(_id, followingId)
+  }
+
+  @Delete(':followingId/unfollow')
+  async unfollow(@Query() query: any, @Param('followingId') followingId: string) {
+    const { _id } = query;
+    return this.userService.unfollow(_id, followingId)
+  }
+
+
+
+
+
+
+
+
+
 
   // admin 
 
@@ -130,6 +166,7 @@ export class UserController {
       data: response
     })
   }
+
 
   @Get(':id/search-suggestion')
   async search(@Query('query') query: string, @Response() res) {
@@ -149,6 +186,7 @@ export class UserController {
       data: response
     })
   }
+
 
   @Post(':userID/remove-admin')
   async removeAdmin(@Response() res, @Param('userID') userID: string) {

@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { CloudGatewayModule } from './cloud-gateway.module';
-import * as cookieParser from 'cookie-parser'
+import cookieParser from 'cookie-parser';
 
 import { KafkaOptions, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';

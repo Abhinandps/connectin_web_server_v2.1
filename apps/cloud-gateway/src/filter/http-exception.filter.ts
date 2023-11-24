@@ -7,6 +7,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse();
     const status = exception.getStatus();
 
+    console.log(exception.message)
+
     response
       .status(status)
       .json({

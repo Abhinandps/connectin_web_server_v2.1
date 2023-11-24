@@ -1,7 +1,7 @@
 import { Injectable, ExecutionContext, ConflictException, UnprocessableEntityException, BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserRequest, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
+import { CreateUserRequest, DataDto, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
 import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt'
 import { User } from './schemas/user.schema';
@@ -9,6 +9,7 @@ import { ObjectId, SaveOptions } from 'mongoose';
 import { USER_SERVICE } from './constant/services';
 import { ClientKafka } from '@nestjs/microservices';
 import { UserCreatedEvent } from './dto/user-created.event';
+import { RedisPubSubService } from '@app/common';
 
 
 export interface JwtPayload {
@@ -40,8 +41,19 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly redisPubSubService: RedisPubSubService,
     @Inject(USER_SERVICE) private readonly userClient: ClientKafka
-  ) { }
+  ) {
+    this.subscribeToUserProfileUpdates();
+  }
+
+  private subscribeToUserProfileUpdates() {
+    this.redisPubSubService.subscribe('user-profile-updates', (message) => {
+      // TODO: Handle the user profile update message
+      console.log(`Received user profile update: ${message}`);
+      // TODO: add logic to handle the message content
+    });
+  }
 
 
 
@@ -87,7 +99,7 @@ export class AuthService {
   }
 
 
-  async create(userInput: CreateUserRequest) {
+  async create(userInput: DataDto) {
     await this.validateCreateUserRequest(userInput)
     const pass = await this.hashPassword(userInput.password)
     try {
@@ -309,7 +321,7 @@ export class AuthService {
   }
 
 
-  private async validateCreateUserRequest(request: CreateUserRequest) {
+  private async validateCreateUserRequest(request: DataDto) {
     let user: User;
     try {
       user = await this.authRepository.findOne({

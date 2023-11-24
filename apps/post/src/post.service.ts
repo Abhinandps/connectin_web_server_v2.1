@@ -1,4 +1,4 @@
-import { AUTH_SERVICE, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS } from '@app/common';
+import { AUTH_SERVICE, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
 import { Injectable, Inject, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { CreatePostDto } from './dto/post.dto';
@@ -7,7 +7,7 @@ import axios from 'axios';
 import { PostRepository } from './posts.repsitory';
 import { Post } from './schemas/posts.schema';
 import { HashTagRepository } from './hashTags.repository';
-import { SaveOptions } from 'mongoose';
+import { SaveOptions, Types } from 'mongoose';
 import { repl } from '@nestjs/core';
 import { HashTag } from './schemas/hashTag.schema';
 import { USER_SERVICE } from './constant/services';
@@ -20,11 +20,30 @@ export class PostService {
     @Inject(USER_SERVICE) private userClient: ClientKafka,
     private readonly configService: ConfigService,
     private readonly postRepository: PostRepository,
-    private readonly hashTagRepository: HashTagRepository
-  ) { }
+    private readonly hashTagRepository: HashTagRepository,
+    private readonly redisPubSubService: RedisPubSubService
+  ) {
+    this.subscribeToUserProfileUpdates();
+  }
 
 
+  private subscribeToUserProfileUpdates() {
+    this.redisPubSubService.subscribe('user-profile-updates', async (message) => {
+      const { userId, data } = JSON.parse(message)
 
+      console.log(data);
+
+
+      const postToUpdate = await this.postRepository.find({ 'creator.userId': userId })
+      const updates: Partial<Post> = {};
+      updates['creator.firstName'] = data?.firstName;
+      updates['creator.lastName'] = data?.lastName;
+      updates['creator.profileImage'] = data?.profileImage;
+      updates['creator.headline'] = data?.headline;
+
+      await this.postRepository.findOneAndUpdate({ _id: new Types.ObjectId(postToUpdate[0]._id) }, { $set: updates })
+    });
+  }
 
   async getAllPosts(_id: any, res: any) {
     try {
@@ -304,13 +323,13 @@ export class PostService {
         likes: 0
       }
 
-     
+
 
       const updateQuery = {
         $push: { comments: comment }
       };
 
-      
+
 
 
       const updatedPost = await this.postRepository.findOneAndUpdate({ _id: postId }, updateQuery)
@@ -325,6 +344,7 @@ export class PostService {
       throw new BadRequestException(err)
     }
   }
+
 
   async deleteComments(postId: string, commentId: string, { _id }: any, res: any) {
     try {
@@ -433,6 +453,7 @@ export class PostService {
     }
 
   }
+
 
   // report a post
   async reportPost(postId: string, request: any, { _id }: any, res: any) {
@@ -622,6 +643,53 @@ export class PostService {
 
 
 
+  // HANDLE EVENTNS
+
+  async handleFollowedUserPost({followingId,followerId}: any, res: any) {
+    try {
+      // 1. find the post by user id 
+      const posts = await this.postRepository.findAll({
+        'creator.userId': followingId
+      }, { createdAt: -1 }, { limit: 5 })
+
+
+      if (posts.length < 0) {
+        // Handle the case where the post with the given ID doesn't exist.
+        throw new NotFoundException('Post not found');
+      }
+
+      const postIds = posts.map((post) => (post._id).toHexString())
+
+      await this.userClient.emit(UPDATE_FEED_USER_FOLLOWS, {postIds,followerId})
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+  async handleUnFollowedUserPost({followingId,followerId}: any, res: any) {
+    try {
+      // 1. find the post by user id 
+      const posts = await this.postRepository.findAll({
+        'creator.userId': followingId
+      }, { createdAt: -1 }, { limit: 5 })
+
+
+      if (posts.length < 0) {
+        // Handle the case where the post with the given ID doesn't exist.
+        throw new NotFoundException('Post not found');
+      }
+
+      const postIds = posts.map((post) => (post._id).toHexString())
+
+      await this.userClient.emit(UPDATE_FEED_USER_UNFOLLOWS, {postIds,followerId})
+
+      
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
 
 
 

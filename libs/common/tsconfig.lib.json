@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "esModuleInterop": true,
     "declaration": true,
     "outDir": "../../dist/libs/common"
   },

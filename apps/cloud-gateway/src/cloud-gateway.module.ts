@@ -56,7 +56,7 @@ export class CloudGatewayModule implements NestModule {
     this.serviceRegistry.registerService({
       name: 'auth',
       urls: ['http://localhost:3001/api/v1/auth'],
-      openRoutes: ['/login']
+      openRoutes: ['/login','/register']
     });
     this.serviceRegistry.registerService({
       name: 'users',

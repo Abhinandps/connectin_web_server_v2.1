@@ -29,41 +29,34 @@ export class CloudGatewayController {
       ...(role && { role })
     };
 
+    const result = await this.cloudGatewayService.forwardRequest(serviceName, path, method, body, query, res);
 
+    const response = result?.data
 
-
-    try {
-      const result = await this.cloudGatewayService.forwardRequest(serviceName, path, method, body, query);
-
-
-      const response = result.data
-
-      if (response?.access_token_expires_at) {
-        res.cookie('access_token', response.access_token, {
-          httpOnly: false,
-          path: '/',
-          expires: new Date(response.access_token_expires_at),
-          domain: 'localhost',
-          sameSite: 'None',
-          secure: true
-        });
-      }
-
-      if (response?.refresh_token_expires_at) {
-        res.cookie('refresh_token', response.refresh_token, {
-          httpOnly: false,
-          path: '/',
-          expires: new Date(response.refresh_token_expires_at),
-          domain: 'localhost',
-          sameSite: 'None',
-          secure: true
-        });
-      }
-
-      res.status(result.status).json(result.data);
-    } catch (error) {
-      // res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ error: error.toString() });
+    if (response?.access_token_expires_at) {
+      res.cookie('access_token', response.access_token, {
+        httpOnly: false,
+        path: '/',
+        expires: new Date(response.access_token_expires_at),
+        domain: 'localhost',
+        sameSite: 'None',
+        secure: true
+      });
     }
+
+    if (response?.refresh_token_expires_at) {
+      res.cookie('refresh_token', response.refresh_token, {
+        httpOnly: false,
+        path: '/',
+        expires: new Date(response.refresh_token_expires_at),
+        domain: 'localhost',
+        sameSite: 'None',
+        secure: true
+      });
+    }
+
+    res.json(result?.data);
+
   }
 
 

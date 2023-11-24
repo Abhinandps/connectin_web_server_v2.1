@@ -1,50 +1,132 @@
-import { BadRequestException, Inject, Injectable, UnprocessableEntityException } from '@nestjs/common';
-import { UserRepository } from './user.repository';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException, UnprocessableEntityException } from '@nestjs/common';
 import { UserCreatedEvent } from './dto/user-created.event';
 import { Types } from 'mongoose';
-import { User } from './schemas/user.schema';
+// import { User } from './schemas/user.schema';
+import { Neo4jUser } from './entity/user.entity';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { PAYMENT_SERVICE } from './constant/services';
 import { ClientKafka } from '@nestjs/microservices';
 import { CreateSubscriptionDto } from '@app/common/dto';
+import { Neo4jService } from './neo4j/neo4j.service';
+import { UserRepository } from './user.repository';
+import { User } from './schemas/user.schema';
+import { RedisService } from '@app/common/redis/redis.service';
+import { POST_SERVICE, RedisPubSubService, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
+import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
 
 @Injectable()
 export class UserService {
   constructor(
-    private readonly userRepository: UserRepository,
+    private readonly neo4jService: Neo4jService,
     private readonly configService: ConfigService,
-    @Inject(PAYMENT_SERVICE) private readonly paymentService: ClientKafka
+    private readonly userRepository: UserRepository,
+    private readonly redisService: RedisService,
+    private readonly redisPubSubService: RedisPubSubService,
+    @Inject(PAYMENT_SERVICE) private readonly paymentService: ClientKafka,
+    @Inject(POST_SERVICE) private readonly postService: ClientKafka
   ) { }
 
-  // getHello(): string {
-  //   return 'Hello World!';
-  // }
+  private hydrate(res): string | any {
+    if (!res.records.length) {
+      return undefined
+    }
 
-  //Create User Based on Evnet
+    const user = res.records[0].get('u')
+
+    const jsonUser = new Neo4jUser(user).toJson()
+    return jsonUser
+  }
+
+  // Create User Based on Event
   async createUser(request: UserCreatedEvent) {
     await this.validateCreateUserRequest(request)
+
     try {
-      await this.userRepository.createPartial({
+      const newUser = await this.userRepository.createPartial({
         ...request,
         userId: new Types.ObjectId(request.userId),
         firstName: request.firstName,
         lastName: request.lastName
       })
-    } catch (er) { }
+
+      if (!newUser) {
+        throw new BadRequestException('user not created')
+      }
+
+      const { userId, firstName, lastName, headline, profileImage, coverImage } = newUser;
+
+      await this.redisService.set(`user:${newUser.userId}`, JSON.stringify({ userId, firstName, lastName, headline, profileImage, coverImage }))
+
+      await this.validateNeo4jCreateUserRequest(request)
+      const res = await this.neo4jService.write(`
+   CREATE (u:USER {
+     userId: $userId,
+     firstName: $firstName,
+     lastName: $lastName,
+     headline: COALESCE($headline, null),
+     profileImage: COALESCE($profileImage, null),
+     coverImage: COALESCE($coverImage, null)
+   })`, {
+        userId: request.userId,
+        firstName: request.firstName,
+        lastName: request.lastName,
+        headline: '',
+        profileImage: '',
+        coverImage: ''
+      });
+
+
+      return this.hydrate(res)
+    } catch (er) {
+      console.log(er);
+
+    }
   }
 
+  async validateNeo4jCreateUserRequest(request: UserCreatedEvent) {
+    try {
+      const existingUser = await this.neo4jService.read(`
+        MATCH (u:USER {userId: $userId})
+        RETURN u
+      `, {
+        userId: request.userId,
+      });
+
+      // console.log(existingUser)
+      // console.log(typeof existingUser)
+
+      if (existingUser.records.length > 0) {
+        throw new UnprocessableEntityException('User with this userId already exists.');
+      }
+    } catch (err) {
+      // Handle errors
+      console.error(err);
+      throw new InternalServerErrorException('Error while validating user existence.');
+    }
+  }
 
   // List All Users
   async getAllUsers() {
     try {
-      const users = await this.userRepository.findAll();
-      return users;
+      const users = await this.neo4jService.read(`
+      MATCH (u:USER)
+      RETURN u
+      `);
+
+      const res = users.records.map(record => {
+        const userNode = record.get('u');
+        const neo4jUser = new Neo4jUser(userNode);
+        return neo4jUser.toJson();
+      });
+
+      return res;
+
     } catch (err) {
+      console.error('Error in getAllUsers:', err);
       throw new BadRequestException(err)
     }
   }
-
 
   // Get One User
   async getUser(userID: string) {
@@ -56,9 +138,7 @@ export class UserService {
     }
   }
 
-
   // Get Feed
-
   async userFeed(_id: any) {
     try {
       const user = await this.userRepository.findOne({ userId: new Types.ObjectId(_id) });
@@ -94,9 +174,71 @@ export class UserService {
     }
   }
 
-
-
   // Update profiles
+
+  async updateUserProfile(_id: any, requestData: UserDto) {
+    try {
+
+
+      // update it 
+      const updatedUser = await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(_id) }, requestData)
+
+      if (!updatedUser) {
+        throw new BadRequestException('User not found');
+      }
+
+      const { userId, firstName, lastName, headline, profileImage, coverImage } = updatedUser
+
+      await this.redisService.set(`user:${_id}`, JSON.stringify({ userId, firstName, lastName, headline, profileImage, coverImage }))
+
+      const message = JSON.stringify({
+        userId: _id,
+        data: { firstName, lastName, headline, profileImage, coverImage }
+      })
+
+      await this.redisPubSubService.publish('user-profile-updates', message)
+
+      await this.updateUserProfileNeo4j(_id, requestData)
+
+      return updatedUser;
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+
+  }
+
+
+  // updateUserProfileINNeo4j--
+  async updateUserProfileNeo4j(userId: string, data: UserDto): Promise<any> {
+    try {
+      const query = `
+        MATCH (u:USER {userId: $userId})
+        SET u.firstName = coalesce($firstName, u.firstName),
+            u.lastName = coalesce($lastName, u.lastName),
+            u.headline = coalesce($headline, u.headline),
+            u.profileImage = coalesce($profileImage, u.profileImage),
+            u.coverImage = coalesce($coverImage, u.coverImage)
+        RETURN u
+      `;
+
+      const parameters = {
+        userId,
+        firstName: data?.firstName,
+        lastName: data?.lastName,
+        headline: data?.headline,
+        profileImage: data?.profileImage,
+        coverImage: data?.coverImage,
+      };
+
+      const result = await this.neo4jService.write(query, parameters);
+      return result
+
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+
 
 
   // hashtag management
@@ -135,7 +277,6 @@ export class UserService {
     } catch (err) {
       throw new BadRequestException(err);
     }
-
   }
 
 
@@ -244,6 +385,60 @@ export class UserService {
   }
 
 
+  async handleAddFollowedUserPostsInFeed({ postIds, followerId }: any, res: any) {
+    try {
+
+      const user = await this.getUser(followerId)
+
+      if (!user) {
+        throw new BadRequestException('user not found')
+      }
+
+      const updateQuery: Partial<User> = { feed: user.feed || [] }
+
+      // updateQuery.feed.unshift(...postIds);
+
+      for (let postId of postIds) {
+        // Generate a random index
+        let index = Math.floor(Math.random() * (updateQuery.feed.length + 1));
+
+        // Insert the post at the random index
+        updateQuery.feed.splice(index, 0, postId);
+      }
+
+      // remove after 20 items
+      if (updateQuery.feed.length > 20) {
+        updateQuery.feed.splice(20, updateQuery.feed.length - 20);
+      }
+
+      // update it 
+      await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(followerId) }, updateQuery)
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+  async handleRemoveUnFollowedUserPostsInFeed({ postIds, followerId }: any, res: any) {
+    try {
+
+      const user = await this.getUser(followerId)
+
+      if (!user) {
+        throw new BadRequestException('user not found')
+      }
+
+      const updateQuery: Partial<User> = { feed: user.feed || [] }
+
+      updateQuery.feed = updateQuery.feed.filter((postId: any) => !postIds.includes(postId))
+
+      // update it 
+      await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(followerId) }, updateQuery)
+
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
 
   // subscription
 
@@ -270,13 +465,74 @@ export class UserService {
 
 
 
+  // FOLLOW, CONNECT 
+
+  async follow(followerId: string, followingId: string): Promise<any> {
+    try {
+
+      if (followerId === followingId) {
+        throw new BadRequestException('Not Allowed')
+      }
+
+      const query = `
+      MATCH (follower:USER {userId: $followerId}), (following:USER {userId: $followingId})
+      CREATE (follower)-[follow:FOLLOWS]->(following)
+      RETURN follow
+      `
+
+      const parameters = {
+        followerId: followerId,
+        followingId: followingId
+      }
+
+      const result = await this.neo4jService.write(query, parameters)
+
+      await this.postService.emit(USER_FOLLOWS, { followingId, followerId })
+
+      return result
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
+
+
+  async unfollow(followerId: string, followingId: string): Promise<any> {
+    try {
+
+      if (followerId === followingId) {
+        throw new BadRequestException('Not Allowed')
+      }
+
+      const query = `
+      MATCH (follower:USER {userId: $followerId})-[follow:FOLLOWS]->(following:USER {userId: $followingId})
+      DELETE follow
+
+      `
+
+      const parameters = {
+        followerId: followerId,
+        followingId: followingId
+      }
+
+
+      const result = await this.neo4jService.write(query, parameters)
+      await this.postService.emit(USER_UNFOLLOWS, { followingId, followerId })
+      return result
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
+
 
 
 
 
 
   // Admin 
-
   // List All Admins
   async getAllAdmins() {
     try {
@@ -395,6 +651,7 @@ export class UserService {
 
   }
 
+
   // add admin
   async addAdmin(userID: string) {
 
@@ -440,6 +697,7 @@ export class UserService {
 
   }
 
+
   private async validateCreateUserRequest(request: UserCreatedEvent) {
     let user: User;
     try {
@@ -455,5 +713,23 @@ export class UserService {
   }
 
 
+  // private async validateCreateUserRequest(request: UserCreatedEvent) {
+  //   try {
+  //     const existingUser = await this.neo4jService.read(`
+  //       MATCH (u:USER {userId: $userId})
+  //       RETURN u
+  //     `, {
+  //       userId: request.userId,
+  //     });
+
+  //     if (existingUser.length > 0) {
+  //       throw new UnprocessableEntityException('User with this userId already exists.');
+  //     }
+  //   } catch (err) {
+  //     // Handle errors
+  //     console.error(err);
+  //     throw new InternalServerErrorException('Error while validating user existence.');
+  //   }
+  // }
 
 }

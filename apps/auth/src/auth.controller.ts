@@ -32,6 +32,7 @@ export class AuthController {
     return user;
   }
 
+  // CreateUserRequest
 
   @Post('/register')
   public async createUser(
@@ -39,10 +40,11 @@ export class AuthController {
     @Request() req,
     @Response() res
   ) {
-    const response = await this.authService.create(body)
+    const response = await this.authService.create(body.data)
     await this.emailConfirmationService.sendVerificationLink(response?.user?.email, response.refresh_token)
     return res.send(response)
   }
+
 
   @Post('/login')
   public async login(
@@ -139,8 +141,6 @@ export class AuthController {
     return res.status(200).json({ message: 'success' })
   }
 
-
-  
   @Post(':userID/remove-admin')
   async removeAdmin(@Response() res, @Param('userID') userID: string) {
     await this.authService.removeAdmin(userID)

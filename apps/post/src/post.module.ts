@@ -3,7 +3,7 @@ import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { ConfigModule } from '@nestjs/config';
 import * as  Joi from 'joi';
-import { AUTH_SERVICE, AuthModule, CloudinaryMiddleware, DatabaseModule, JwtAuthGuard } from '@app/common';
+import { AUTH_SERVICE, AuthModule, CloudinaryMiddleware, DatabaseModule, JwtAuthGuard, KafkaModule, RedisPubSubService } from '@app/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from './schemas/posts.schema';
@@ -14,6 +14,7 @@ import { USER_SERVICE } from './constant/services';
 
 @Module({
   imports: [
+    KafkaModule,
     AuthModule,
     MongooseModule.forFeature([
       { name: Post.name, schema: PostSchema },
@@ -56,7 +57,8 @@ import { USER_SERVICE } from './constant/services';
     DatabaseModule
   ],
   controllers: [PostController],
-  providers: [PostService, PostRepository, HashTagRepository],
+  providers: [PostService, PostRepository, HashTagRepository, RedisPubSubService],
+  exports: [RedisPubSubService]
 })
 
 

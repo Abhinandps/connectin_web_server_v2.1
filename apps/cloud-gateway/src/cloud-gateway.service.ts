@@ -1,7 +1,7 @@
 
 import { ConfigService } from '@nestjs/config';
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, UseGuards, Get, Request, Response } from '@nestjs/common';
-import * as CircuitBreaker from 'opossum';
+import { Injectable, NotFoundException, UnauthorizedException, HttpException, HttpStatus, BadRequestException, UseGuards, Get, Request, Response } from '@nestjs/common';
+import  CircuitBreaker from 'opossum';
 import { AxiosResponse } from 'axios';
 import { Observable } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
@@ -40,42 +40,52 @@ export class CloudGatewayService {
     path: string,
     method: string,
     body: any = null,
-    query: any = {}
+    query: any = {},
+    res: any
   ): Promise<AxiosResponse<any>> {
+    try {
 
-    const queryString = Object.keys(query)
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
-      .join('&');
+      const queryString = Object.keys(query)
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
+        .join('&');
 
-    const url = `${this.serviceRegistry.getServiceUrl(serviceUrl)}/${path}?${queryString}`;
-    console.log(`forwarding request to ${url}`)
+      const url = `${this.serviceRegistry.getServiceUrl(serviceUrl)}/${path}?${queryString}`;
+      console.log(`forwarding request to ${url}`)
 
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return this.httpService.get(url).toPromise();
-      case 'POST':
-        return await this.httpService.post(url, body).toPromise();
-      case 'PUT':
-        return this.httpService.put(url, body).toPromise();
-      case 'DELETE':
-        return this.httpService.delete(url).toPromise();
-      default:
-        throw new Error(`Unsupported method: ${method}`);
+      switch (method.toUpperCase()) {
+        case 'GET':
+          return this.httpService.get(url).toPromise();
+        case 'POST':
+          return await this.httpService.post(url, body).toPromise();
+        case 'PUT':
+          return this.httpService.put(url, body).toPromise();
+        case 'DELETE':
+          return this.httpService.delete(url).toPromise();
+        default:
+          throw new Error(`Unsupported method: ${method}`);
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        console.error(`Downstream service responded with a 404 error.`);
+        res.send(error?.response?.data)
+      } else if (error.response?.status === 401) {
+        console.error('Downstream service responded with a 401 error.');
+        res.send(error?.response?.data)
+      } else {
+        console.error(`Error forwarding request: ${error.message}`);
+        res.send(error?.response?.data)
+      }
     }
   }
 
 
-  async forwardRequest(serviceName: string, path: string, method: string, body: any, query: any): Promise<AxiosResponse<any>> {
+  async forwardRequest(serviceName: string, path: string, method: string, body: any, query: any, res: any): Promise<AxiosResponse<any>> {
     let breaker = this.circuitBreakers.get(serviceName);
     if (!breaker) {
       breaker = this.createCircuitBreaker(serviceName);
     }
-
-    return breaker.fire(serviceName, path, method, body, query);
+    return breaker.fire(serviceName, path, method, body, query, res);
   }
-
-
-
 
 
 
@@ -188,6 +198,7 @@ export class CloudGatewayService {
   //     }
   //   }
   // }
+
 
 
 

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AuthModule } from './auth.module';
 import { ConfigService } from '@nestjs/config';
-import * as cookieParser from 'cookie-parser'
+import cookieParser from 'cookie-parser';
 import { KafkaOptions, MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { KafkaService } from '@app/common';
 import { ValidationPipe } from '@nestjs/common';

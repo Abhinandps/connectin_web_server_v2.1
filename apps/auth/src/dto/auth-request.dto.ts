@@ -1,6 +1,7 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { Type } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-export class CreateUserRequest {
+export class DataDto {
 
     @IsNotEmpty()
     @IsEmail()
@@ -21,6 +22,12 @@ export class CreateUserRequest {
     @IsOptional()
     @IsString()
     role: string;
+}
+
+export class CreateUserRequest {
+    @ValidateNested()
+    @Type(() => DataDto)
+    data: DataDto
 }
 
 

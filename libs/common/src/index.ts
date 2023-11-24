@@ -9,5 +9,6 @@ export * from './auth/services'
 export * from './auth/auth.guard'
 export * from './auth/auth.module'
 export * from './events/topics'
-
-
+export * from './redis/redis-pubsub.service'
+export * from './redis/redis.service'
+export * from './redis/redis.module'
