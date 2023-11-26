@@ -13,6 +13,7 @@ import { PAYMENT_SERVICE, USER_SERVICE } from './constant/services';
 import { Neo4jModule } from './neo4j/neo4j.module';
 import { Neo4jConfig } from './neo4j/neo4j-config.interface';
 import { UserRepository } from './user.repository';
+import { UserGateway } from './websocket/user.gateway';
 
 @Module({
   imports: [
@@ -89,7 +90,7 @@ import { UserRepository } from './user.repository';
     DatabaseModule
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository, RedisService, RedisPubSubService],
+  providers: [UserService, UserRepository, RedisService, RedisPubSubService,UserGateway],
   exports: [RedisPubSubService]
 })
 export class UserModule { }

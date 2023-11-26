@@ -4,6 +4,7 @@ import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, USER_FOLLOWS, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
 import { CreateSubscriptionDto } from '@app/common/dto';
 import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
+import { ConnectionRequestDto } from './dto/connection-request.dto';
 
 
 @Controller('api/v1/users')
@@ -135,6 +136,17 @@ export class UserController {
 
   // FOLLOW, CONNECT
 
+  @Post('following')
+  async getFollowing(@Query() query: any, @Response() res) {
+    const { _id } = query;
+    return this.userService.getFollwing(_id, res)
+  }
+  
+  @Post('followers')
+  async getFollowers(@Query() query: any, @Response() res) {
+    const { _id } = query;
+    return this.userService.getFollowers(_id, res)
+  }
 
   @Post(':followingId/follow')
   async follow(@Query() query: any, @Param('followingId') followingId: string) {
@@ -149,10 +161,47 @@ export class UserController {
   }
 
 
+  @Post('invitations')
+  async getConnectionRequests(@Query() query: any, @Response() res) {
+    const { _id } = query;
+
+    return this.userService.getConnectionRequests(_id, res)
+  }
+
+  @Post('my-connections')
+  async getConnections(@Query() query: any, @Response() res) {
+    const { _id } = query;
+    return this.userService.getConnections(_id, res)
+  }
+
+  @Post(':userId/send-connection-request')
+  async sendConnectionRequest(@Query() query: any, @Param('userId') connectionRequestId: string) {
+    const { _id } = query;
+
+    return this.userService.sendConnectionRequest(_id, connectionRequestId)
+  }
+
+  @Post(':userId/accept-connection')
+  async acceptConnection(@Query() query: any, @Param('userId') connectionRequestId: string) {
+    const { _id } = query;
+
+    return this.userService.acceptConnectionRequest(_id, connectionRequestId)
+  }
 
 
+  @Post(':userId/reject-connection')
+  async rejectConnection(@Query() query: any, @Param('userId') connectionRequestId: string) {
+    const { _id } = query;
 
+    return this.userService.rejectConnection(_id, connectionRequestId)
+  }
 
+  @Post(':userId/remove-connection')
+  async removeConnection(@Query() query: any, @Param('userId') connectionRequestId: string) {
+    const { _id } = query;
+
+    return this.userService.removeConnection(_id, connectionRequestId)
+  }
 
 
 
