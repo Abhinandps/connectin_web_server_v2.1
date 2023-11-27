@@ -53,10 +53,20 @@ export class UserController {
   // @Get('user-activity')
 
   @Get()
-  async getAllUsers(@Response() res) {
-    const response = await this.userService.getAllUsers();
+  async getAllUsers(@Query() query: any, @Response() res) {
+    const { search } = query
+    const response = await this.userService.getAllUsers(search);
     return res.status(200).json({
-      // result: response.length,
+      data: response
+    })
+  }
+
+
+  @Post('user/:userId')
+  async getOneUser(@Query() query: any, @Param('userId') userId: string, @Response() res) {
+    const { _id } = query
+    const response = await this.userService.getOneUser(_id, userId);
+    return res.status(200).json({
       data: response
     })
   }
@@ -111,7 +121,6 @@ export class UserController {
   }
 
 
-
   @UseGuards(JwtAuthGuard)
   @Post('toggle-follow-hashtag')
   async toggleFollowHashtag(@Body() request: any, @Req() req: any, @Response() res) {
@@ -141,7 +150,7 @@ export class UserController {
     const { _id } = query;
     return this.userService.getFollwing(_id, res)
   }
-  
+
   @Post('followers')
   async getFollowers(@Query() query: any, @Response() res) {
     const { _id } = query;
@@ -202,8 +211,6 @@ export class UserController {
 
     return this.userService.removeConnection(_id, connectionRequestId)
   }
-
-
 
 
   // admin 

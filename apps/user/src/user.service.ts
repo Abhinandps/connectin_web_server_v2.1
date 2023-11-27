@@ -39,6 +39,7 @@ export class UserService {
     const user = res.records[0].get('u')
 
     const jsonUser = new Neo4jUser(user).toJson()
+
     return jsonUser
   }
 
@@ -110,27 +111,79 @@ export class UserService {
     }
   }
 
+
   // List All Users
-  async getAllUsers() {
+  async getAllUsers(searchTerm: string | null) {
     try {
-      const users = await this.neo4jService.read(`
+      if (searchTerm) {
+
+        const users = await this.neo4jService.read(`
       MATCH (u:USER)
+      WHERE u.firstName =~ '^' + $searchTerm + '.*' 
       RETURN u
+      `, { searchTerm });
+
+        const res = users.records.map(record => {
+          const userNode = record.get('u');
+          const neo4jUser = new Neo4jUser(userNode);
+          return neo4jUser.toJson();
+        });
+
+        return res;
+      } else {
+
+        const users = await this.neo4jService.read(`
+        MATCH (u:USER)
+        RETURN u
       `);
 
-      const res = users.records.map(record => {
-        const userNode = record.get('u');
-        const neo4jUser = new Neo4jUser(userNode);
-        return neo4jUser.toJson();
-      });
+        const res = users.records.map(record => {
+          const userNode = record.get('u');
+          const neo4jUser = new Neo4jUser(userNode);
+          return neo4jUser.toJson();
+        });
 
-      return res;
+        return res;
+      }
 
     } catch (err) {
       console.error('Error in getAllUsers:', err);
       throw new BadRequestException(err)
     }
   }
+
+
+  // get one user from neo4j 
+  async getOneUser(_id: string, userId: string) {
+    try {
+
+      const user = await this.neo4jService.read(`
+      MATCH (u:USER {userId: $userId})
+      RETURN u
+      `, { userId });
+
+      const res = await this.hydrate(user)
+
+      // const result = await Promise.all(
+      //   resArray.map(async (user: any) => {
+      //     const followStatus = await this.checkFollowStatus(_id, user.userId)
+      //     const connectionStatus = await this.checkConnectionStatus(_id, user.userId)
+      //     return { ...user, connectionStatus, followStatus }
+      //   })
+      // )
+
+      const followStatus = await this.checkFollowStatus(_id, res.userId)
+      const connectionStatus = await this.checkConnectionStatus(_id, res.userId)
+
+      const result = { ...res, followStatus, connectionStatus }
+
+      return result
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
 
   // Get One User
   async getUser(userID: string) {
@@ -471,7 +524,7 @@ export class UserService {
 
   // FOLLOW, CONNECT 
 
-  async getFollwing(_id: any, res:any) {
+  async getFollwing(_id: any, res: any) {
     try {
       const query = `
       MATCH (u:USER {userId: $userId}) -[:FOLLOWS]->(following:USER)
@@ -498,7 +551,7 @@ export class UserService {
           return { ...user, connectionStatus }
         })
       )
-      
+
       res.json(follows)
 
     } catch (err) {
@@ -506,7 +559,7 @@ export class UserService {
     }
   }
 
-  async getFollowers(_id: any, res:any) {
+  async getFollowers(_id: any, res: any) {
     try {
       const query = `
       MATCH (u:USER {userId: $userId})<-[:FOLLOWS]-(following:USER)
@@ -532,7 +585,7 @@ export class UserService {
           return { ...user, connectionStatus }
         })
       )
-      
+
       res.json(follows)
 
     } catch (err) {

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query, Response } from '@nestjs/common';
 import { JobsService } from './jobs.service';
-import { CreateJobDataDto, CreateJobDto } from './dto/create-job.dto';
+import {  CreateJobDto } from './dto/create-job.dto';
 import { validate } from 'class-validator';
 
 @Controller('api/v1/jobs')

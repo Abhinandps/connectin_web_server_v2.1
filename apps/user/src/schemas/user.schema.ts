@@ -31,14 +31,6 @@ export class Subscription {
 }
 
 
-@Schema()
-export class followingAndFollowers {
-    @Prop([Types.ObjectId])
-    following: Types.ObjectId[]
-
-    @Prop([Types.ObjectId])
-    followers: Types.ObjectId[]
-}
 
 @Schema({ versionKey: false, timestamps: true })
 export class User extends AbstractDocument {
@@ -117,13 +109,8 @@ export class User extends AbstractDocument {
     @Prop([Types.ObjectId])
     invitations: Types.ObjectId[]
 
-    @Prop(followingAndFollowers)
-    followingAndFollowers: followingAndFollowers
-
     @Prop([String])
     followed_hashtags: String[]
-
-
 
 }
 
