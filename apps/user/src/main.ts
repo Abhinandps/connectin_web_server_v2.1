@@ -8,6 +8,7 @@ import { ValidationPipe } from '@nestjs/common'
 import { Neo4jTypeInterceptor } from './neo4j/neo4j-type.interceptor';
 import { Neo4jErrorFilter } from './neo4j/neo4j-error.filter';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import { WsAdapter } from '@nestjs/platform-ws';
 
 async function bootstrap() {
   const app = await NestFactory.create(UserModule);
@@ -16,13 +17,14 @@ async function bootstrap() {
     origin: 'http://localhost:5173',
     credentials: true,
   })
-  app.useGlobalPipes(new ValidationPipe())
-  // const kafkaService = app.get<KafkaService>(KafkaService)
-  // app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('USER'))
+  // app.useGlobalPipes(new ValidationPipe())
+  const kafkaService = app.get<KafkaService>(KafkaService)
+  app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('USER'))
   app.useGlobalPipes(new ValidationPipe());
   // app.useGlobalInterceptors(new Neo4jTypeInterceptor())
 
   app.useWebSocketAdapter(new IoAdapter(app))
+
 
   app.useGlobalFilters(new Neo4jErrorFilter());
   app.enableCors();

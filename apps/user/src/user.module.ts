@@ -13,10 +13,12 @@ import { PAYMENT_SERVICE, USER_SERVICE } from './constant/services';
 import { Neo4jModule } from './neo4j/neo4j.module';
 import { Neo4jConfig } from './neo4j/neo4j-config.interface';
 import { UserRepository } from './user.repository';
-import { UserGateway } from './websocket/user.gateway';
+import { UserGatewayModule } from './websocket/user.gateway.module';
+import { SocketClient } from './websocket/user.socketClient';
 
 @Module({
   imports: [
+    UserGatewayModule,
     KafkaModule,
     RedisModule,
     MongooseModule.forFeature([
@@ -90,7 +92,7 @@ import { UserGateway } from './websocket/user.gateway';
     DatabaseModule
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository, RedisService, RedisPubSubService,UserGateway],
+  providers: [UserService, UserRepository, RedisService, RedisPubSubService,SocketClient],
   exports: [RedisPubSubService]
 })
 export class UserModule { }

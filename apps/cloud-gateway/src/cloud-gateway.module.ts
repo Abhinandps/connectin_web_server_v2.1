@@ -15,9 +15,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { AccessTokenJwtStrategy } from './strategies/access_jwt-strategy';
 import { RefreshTokenJwtStrategy } from './strategies/refresh_jwt-strategy';
 import { PAYMENT_SERVICE } from './constant/services';
+import { GatewayModule } from './websocket/user.gateway.module';
 
 @Module({
   imports: [
+    GatewayModule,
     HttpModule,
     ConfigModule.forRoot({
       isGlobal: true,

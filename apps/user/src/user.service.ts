@@ -14,7 +14,7 @@ import { User } from './schemas/user.schema';
 import { RedisService } from '@app/common/redis/redis.service';
 import { POST_SERVICE, RedisPubSubService, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
 import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
-import { UserGateway } from './websocket/user.gateway';
+import { SocketClient } from './websocket/user.socketClient';
 import { ConnectionRequestDto } from './dto/connection-request.dto';
 import { types } from 'joi';
 
@@ -26,7 +26,7 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly redisService: RedisService,
     private readonly redisPubSubService: RedisPubSubService,
-    private readonly userGateway: UserGateway,
+    private readonly socketClient: SocketClient,
     @Inject(PAYMENT_SERVICE) private readonly paymentService: ClientKafka,
     @Inject(POST_SERVICE) private readonly postService: ClientKafka
   ) { }
@@ -176,6 +176,8 @@ export class UserService {
       const connectionStatus = await this.checkConnectionStatus(_id, res.userId)
 
       const result = { ...res, followStatus, connectionStatus }
+
+      // this.socketClient.emitToUser(result)
 
       return result
 
@@ -856,7 +858,6 @@ END AS connectionStatus
     const result = await this.neo4jService.read(query, parameters)
 
     const connectionStatus = result.records[0]?.get('connectionStatus');
-    console.log(connectionStatus)
 
     return connectionStatus;
 
@@ -894,7 +895,6 @@ END AS connectionStatus
     const result = await this.neo4jService.read(query, parameters)
 
     const connectionStatus = result.records[0]?.get('connectionStatus');
-    console.log(connectionStatus)
 
     return connectionStatus;
 
