@@ -3,7 +3,7 @@ import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi'
-import { DatabaseModule, KafkaService } from '@app/common';
+import { DatabaseModule, KafkaService, NOTIFICATIONS_SERVICE } from '@app/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { USER_SERVICE } from './constant/services';
 import { SubscriptionRepository } from './payment.repository';
@@ -34,6 +34,20 @@ import { PaymentSchema, Subscription } from './schemas/payment.schema';
           },
           consumer: {
             groupId: `${USER_SERVICE}-consumer`
+          }
+        }
+      },
+    ]),
+    ClientsModule.register([
+      {
+        name: NOTIFICATIONS_SERVICE,
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+          },
+          consumer: {
+            groupId: `${NOTIFICATIONS_SERVICE}-consumer`
           }
         }
       },

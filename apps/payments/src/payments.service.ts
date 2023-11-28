@@ -5,6 +5,7 @@ import Stripe from 'stripe'
 import { SubscriptionRepository } from './payment.repository';
 import { ClientKafka } from '@nestjs/microservices';
 import { USER_SERVICE } from './constant/services';
+import { NOTIFICATIONS_SERVICE } from '@app/common';
 
 
 @Injectable()
@@ -16,7 +17,8 @@ export class PaymentsService {
   constructor(
     private readonly configService: ConfigService,
     private readonly subsRepository: SubscriptionRepository,
-    @Inject(USER_SERVICE) private readonly userClient: ClientKafka
+    @Inject(USER_SERVICE) private readonly userClient: ClientKafka,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationClient: ClientKafka
   ) { }
 
   async createCharge({ amount }: CreateChargeDto) {
@@ -37,7 +39,7 @@ export class PaymentsService {
 
   }
 
-  async addSubscription(data: CreateSubscriptionDto, { _id }: any, res: any) {
+  async addSubscription(data: CreateSubscriptionDto, { _id, email }: any, res: any) {
 
     try {
       const existingSubscription = await this.subsRepository.findOne({
@@ -63,9 +65,12 @@ export class PaymentsService {
 
       await this.userClient.emit('create_charge', newSubscription)
 
+      this.notificationClient.emit('notify_email', { email, text: `Your payment of ₹${data.charge.amount} has completed successfully.` })
+
       res.json(newSubscription)
 
       return newSubscription;
+      
     } catch (error) {
       // Handle the error here, log it, or rethrow it if needed
       console.log(error);

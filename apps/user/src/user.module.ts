@@ -92,7 +92,7 @@ import { SocketClient } from './websocket/user.socketClient';
     DatabaseModule
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository, RedisService, RedisPubSubService,SocketClient],
+  providers: [UserService, UserRepository, RedisService, RedisPubSubService, SocketClient],
   exports: [RedisPubSubService]
 })
 export class UserModule { }
