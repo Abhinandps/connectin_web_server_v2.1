@@ -18,7 +18,6 @@ export class SocketClient implements OnModuleInit {
     }
 
     private registerConsumerEvents() {
-
         this.socketClient.on('connect', () => {
             console.log('connected to gateway')
         });
@@ -28,11 +27,12 @@ export class SocketClient implements OnModuleInit {
         })
     }
 
-    // emitToUser(result: any) {
-    //     this.socketClient.emit('newMessage', {
-    //         msg: result
-    //     });
-    // }
+    emitInvitationToUser(result: any) {
+        console.log(result,'result')
+        this.socketClient.emit('user_invitation_request', {
+            ...result
+        });
+    }
 
 
 

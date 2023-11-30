@@ -5,9 +5,12 @@ import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi'
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { KafkaModule, KafkaService, NOTIFICATIONS_SERVICE } from '@app/common';
+import { UserGatewayModule } from './websocket/user.gateway.module';
+import { SocketClient } from './websocket/user.socketClient';
 
 @Module({
   imports: [
+    UserGatewayModule,
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -20,6 +23,6 @@ import { KafkaModule, KafkaService, NOTIFICATIONS_SERVICE } from '@app/common';
     }),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, KafkaService],
+  providers: [NotificationsService, KafkaService,SocketClient],
 })
 export class NotificationsModule { }

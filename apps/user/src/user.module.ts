@@ -3,7 +3,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi'
-import { AUTH_SERVICE, DatabaseModule, KafkaModule, KafkaService, POST_SERVICE, RedisModule, RedisPubSubService, RedisService } from '@app/common';
+import { AUTH_SERVICE, DatabaseModule, KafkaModule, KafkaService, NOTIFICATIONS_SERVICE, POST_SERVICE, RedisModule, RedisPubSubService, RedisService } from '@app/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { Education, EducationSchema } from './schemas/education.schema';
@@ -13,12 +13,11 @@ import { PAYMENT_SERVICE, USER_SERVICE } from './constant/services';
 import { Neo4jModule } from './neo4j/neo4j.module';
 import { Neo4jConfig } from './neo4j/neo4j-config.interface';
 import { UserRepository } from './user.repository';
-import { UserGatewayModule } from './websocket/user.gateway.module';
-import { SocketClient } from './websocket/user.socketClient';
+import { UserGatewayModule } from '../../notifications/src/websocket/user.gateway.module';
+import { SocketClient } from '../../notifications/src/websocket/user.socketClient';
 
 @Module({
   imports: [
-    UserGatewayModule,
     KafkaModule,
     RedisModule,
     MongooseModule.forFeature([
@@ -69,6 +68,20 @@ import { SocketClient } from './websocket/user.socketClient';
         }
       },
     ]),
+    ClientsModule.register([
+      {
+        name: NOTIFICATIONS_SERVICE,
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+          },
+          consumer: {
+            groupId: `${NOTIFICATIONS_SERVICE}-consumer`
+          }
+        }
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -87,12 +100,12 @@ import { SocketClient } from './websocket/user.socketClient';
         username: configService.get('NEO4J_USERNAME'),
         password: configService.get('NEO4J_PASSWORD'),
         database: configService.get('NEO4J_DATABASE'),
-      })
+      }),
     }),
     DatabaseModule
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository, RedisService, RedisPubSubService, SocketClient],
+  providers: [UserService, UserRepository, RedisService, RedisPubSubService],
   exports: [RedisPubSubService]
 })
 export class UserModule { }

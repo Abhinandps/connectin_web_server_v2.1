@@ -5,10 +5,15 @@ import { NotifyEmailDto } from './dto/notify-email.dto';
 
 @Controller()
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) { }
 
   @EventPattern('notify_email')
-  async notifyEmail(@Payload() data:NotifyEmailDto){
+  async notifyEmail(@Payload() data: NotifyEmailDto) {
     this.notificationsService.notifyEmail(data)
+  }
+
+  @EventPattern('send_invitation')
+  async sendInvitation(@Payload() data: any) {
+    this.notificationsService.sendInvitation(data)
   }
 }

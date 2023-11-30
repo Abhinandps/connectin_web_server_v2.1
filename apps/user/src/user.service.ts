@@ -12,9 +12,9 @@ import { Neo4jService } from './neo4j/neo4j.service';
 import { UserRepository } from './user.repository';
 import { User } from './schemas/user.schema';
 import { RedisService } from '@app/common/redis/redis.service';
-import { POST_SERVICE, RedisPubSubService, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
+import { NOTIFICATIONS_SERVICE, POST_SERVICE, RedisPubSubService, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
 import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
-import { SocketClient } from './websocket/user.socketClient';
+import { SocketClient } from '../../notifications/src/websocket/user.socketClient';
 import { ConnectionRequestDto } from './dto/connection-request.dto';
 import { types } from 'joi';
 
@@ -26,9 +26,9 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly redisService: RedisService,
     private readonly redisPubSubService: RedisPubSubService,
-    private readonly socketClient: SocketClient,
     @Inject(PAYMENT_SERVICE) private readonly paymentService: ClientKafka,
-    @Inject(POST_SERVICE) private readonly postService: ClientKafka
+    @Inject(POST_SERVICE) private readonly postService: ClientKafka,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notifyService: ClientKafka
   ) { }
 
   private hydrate(res): string | any {
@@ -177,7 +177,7 @@ export class UserService {
 
       const result = { ...res, followStatus, connectionStatus }
 
-      // this.socketClient.emitToUser(result)
+
 
       return result
 
@@ -655,56 +655,105 @@ export class UserService {
   }
 
 
-
-
   async getConnectionRequests(_id: string, res: any) {
-    const user = await this.getUser(_id)
 
-    const usersList = await this.getAllUsers()
+    try {
+      const query = `
+      MATCH (u:USER {userId: $userId})<-[:PENDING_CONNECTION]-(invitations:USER)
+      RETURN invitations
+      `
+      const parameters = {
+        userId: _id
+      }
 
-    if (!user) {
-      throw new BadRequestException('user not found')
+      const results = await this.neo4jService.read(query, parameters)
+
+      const response = results.records.map(record => {
+        const userNode = record.get('invitations');
+        const neo4jUser = new Neo4jUser(userNode);
+        return neo4jUser.toJson();
+      });
+
+      // Added Retry Mechanism
+      const MAX_RETRIES = 3;
+
+      const invitations = await Promise.all(
+        response.map(async (user) => {
+          let connectionStatus;
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            try {
+              connectionStatus = await this.checkConnectionStatus(_id, user.userId);
+              break;
+            } catch (error) {
+              // console.error(`Error fetching connection status for user ${user.userId}:`, error.message);
+              if (retry < MAX_RETRIES - 1) {
+                // Retry with a delay before the next attempt
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+          }
+          return { ...user, connectionStatus };
+        })
+      );
+
+
+      res.json(invitations)
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
     }
-
-    if (user.invitations.length < 1) {
-      return []
-    }
-
-    const connectionRequests = await Promise.all(user.invitations.map(async (invitationId: string) => {
-      const invitedUser = usersList.find((user) => user.userId === invitationId);
-      const connectionStatus = await this.checkConnectionStatus(_id, invitationId);
-      return { ...invitedUser, connectionStatus };
-    }));
-
-    res.json(connectionRequests)
 
   }
 
 
   async getConnections(_id: string, res: any) {
     try {
-      const user = await this.getUser(_id)
-
-      const usersList = await this.getAllUsers()
-
-      if (!user) {
-        throw new BadRequestException('user not found')
+      const query = `
+      MATCH (u:USER {userId: $userId})-[:CONNECTED]-(connections:USER)
+      RETURN connections
+      `
+      const parameters = {
+        userId: _id
       }
 
-      if (user.connections.length < 1) {
-        return []
-      }
+      const results = await this.neo4jService.read(query, parameters)
 
-      const connections = await Promise.all(user.connections.map(async (connectionId: string) => {
-        const connectedUser = usersList.find((user) => user.userId === connectionId.toString());
-        const connectionStatus = await this.checkConnectionStatus(_id, connectionId.toString());
-        return { ...connectedUser, connectionStatus };
-      }));
+      const response = results.records.map(record => {
+        const userNode = record.get('connections');
+        const neo4jUser = new Neo4jUser(userNode);
+        return neo4jUser.toJson();
+      });
 
-      res.json(connections)
+      // Added Retry Mechanism
+      const MAX_RETRIES = 3;
+
+      const invitations = await Promise.all(
+        response.map(async (user) => {
+          let connectionStatus: string;
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            try {
+              connectionStatus = await this.checkConnectionStatus(_id, user.userId);
+              break;
+            } catch (error) {
+              // console.error(`Error fetching connection status for user ${user.userId}:`, error.message);
+              if (retry < MAX_RETRIES - 1) {
+                // Retry with a delay before the next attempt
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+          }
+          return { ...user, connectionStatus };
+        })
+      );
+
+
+      res.json(invitations)
+
     } catch (err) {
-      console.log(err)
+      throw new BadRequestException(err.message)
     }
+
+
   }
 
   async sendConnectionRequest(_id: any, connectionRequestId: any): Promise<any> {
@@ -721,11 +770,18 @@ export class UserService {
 
       if (connectionStatus === 'pending') {
         throw new BadRequestException('Already Sented connection request')
+      } else if (connectionStatus === 'connected') {
+        throw new BadRequestException('Already connected')
       } else {
         // create connection with status pending
         await this.createConnection(_id, connectionRequestId)
 
+        // to get sender details for sending to reciver
+        const user = await this.getOneUser(connectionRequestId, _id)
+
         // emit event to socket
+
+        this.notifyService.emit('send_invitation', { ...user, receiver: connectionRequestId })
 
         // save to db
 
@@ -764,8 +820,6 @@ export class UserService {
       const updateQueryInSender: Partial<User> = { connections: sender.connections || [] }
       const updateQueryInReciver: Partial<User> = { connections: receiver.connections || [], invitations: receiver.invitations || [] }
 
-
-
       updateQueryInSender.connections.unshift(new Types.ObjectId(acceptorId))
 
       const index = updateQueryInReciver.invitations.indexOf(new Types.ObjectId(requestorId))
@@ -784,7 +838,6 @@ export class UserService {
       console.log(err.message);
     }
   }
-
 
   async rejectConnection(acceptorId: string, requestorId: string) {
     try {
@@ -834,7 +887,6 @@ export class UserService {
   }
 
 
-
   private async checkFollowStatus(id: string, following: string) {
 
     const query = `
@@ -866,25 +918,20 @@ END AS connectionStatus
 
   private async checkConnectionStatus(id: string, userId: string) {
 
-
-
     const query = `
-    MATCH (sender:USER {userId: $sender})
-OPTIONAL MATCH (sender)-[rel1:CONNECTED]->(receiver:USER {userId: $receiver})
-WITH rel1
-OPTIONAL MATCH (sender)<-[rel3:CONNECTED]-(receiver:USER {userId: $receiver})
-WITH rel1,rel3
-OPTIONAL MATCH (sender)-[rel2:PENDING_CONNECTION]->(receiver:USER {userId: $receiver})
-WITH rel1,rel3,rel2
-OPTIONAL MATCH (sender)<-[rel4:PENDING_CONNECTION]-(receiver:USER {userId: $receiver})
-WITH rel1,rel3,rel2,rel4
+
+MATCH (sender:USER {userId: $sender})
+MATCH (receiver:USER {userId: $receiver})
+
+OPTIONAL MATCH (sender)-[rel1:CONNECTED]-(receiver)
+OPTIONAL MATCH (sender)-[rel2:PENDING_CONNECTION]-(receiver)
+
 RETURN CASE
     WHEN rel1 IS NOT NULL THEN 'connected'
-    WHEN rel3 IS NOT NULL THEN 'connected'
     WHEN rel2 IS NOT NULL THEN 'pending'
-    WHEN rel4 IS NOT NULL THEN 'pending'
     ELSE 'connect'
 END AS connectionStatus
+
     `
 
     const parameters = {
@@ -894,7 +941,10 @@ END AS connectionStatus
 
     const result = await this.neo4jService.read(query, parameters)
 
+
     const connectionStatus = result.records[0]?.get('connectionStatus');
+
+    // console.log(connectionStatus)
 
     return connectionStatus;
 
@@ -964,9 +1014,8 @@ END AS connectionStatus
   private async removeConnectionNodes(acceptorId: string, requestorId: string) {
     const query = `
     MATCH (sender:USER {userId: $requestorId})
-    OPTIONAL MATCH (sender)-[rel1:CONNECTED]->(receiver:USER {userId: $acceptorId})
-    OPTIONAL MATCH (sender)<-[rel2:CONNECTED]-(receiver:USER {userId: $acceptorId})
-    DELETE rel1, rel2
+    OPTIONAL MATCH (sender)-[rel:CONNECTED]-(receiver:USER {userId: $acceptorId})
+    DELETE rel
     
   `
 
@@ -1067,9 +1116,10 @@ END AS connectionStatus
 
     console.log(await Promise.all(userDetails));
     return await Promise.all(userDetails);
-  } catch(err) {
-    throw new BadRequestException(err)
   }
+  // catch(err) {
+  //   throw new BadRequestException(err)
+  // }
 
 
   // search
