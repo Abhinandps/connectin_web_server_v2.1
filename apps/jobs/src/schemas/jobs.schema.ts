@@ -1,24 +1,7 @@
 import { AbstractDocument } from "@app/common";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Types } from "mongoose";
 
 
-
-@Schema()
-export class Qualifications {
-    @Prop()
-    education: string;
-
-    @Prop()
-    experience: string;
-
-    @Prop({ default: [] })
-    methodologies: string[];
-
-    @Prop({ default: [] })
-    skills: string[]
-
-}
 
 
 @Schema({ versionKey: false, timestamps: true })
@@ -43,11 +26,14 @@ export class Job extends AbstractDocument {
     @Prop()
     userId: string;
 
-    @Prop({ default: [] })
-    responsibilities: string[]
+    @Prop()
+    description: string;
 
-    @Prop([Qualifications])
-    qualifications: Qualifications[]
+    @Prop([])
+    skills: string[];
+
+    @Prop()
+    isDraft: boolean;
 
 }
 

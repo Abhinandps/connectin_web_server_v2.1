@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateJobDto } from './dto/create-job.dto';
+import { CreateJobDto, UpdateJobDto } from './dto/create-job.dto';
 import { JobRepository } from './jobs.repository';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class JobsService {
@@ -49,6 +50,23 @@ export class JobsService {
   }
 
 
+  async getJob({ _id }: any, jobId: string, res: any) {
+    try {
+      const job = await this.jobRepository.findOne({ userId: _id, _id: jobId })
+
+      if (job) {
+        res.status(200).json({
+          data: job
+        })
+      }
+
+
+    } catch (error) {
+      throw new BadRequestException(error)
+    }
+  }
+
+
 
   async createJobs(createJob: CreateJobDto, { _id }: any, res: any) {
     try {
@@ -56,8 +74,9 @@ export class JobsService {
       const response = await this.jobRepository.create({
         ...createJob,
         userId: _id,
-        responsibilities: [],
-        qualifications: []
+        description: null,
+        skills: [],
+        isDraft: true
       })
 
       res.status(200).json({
@@ -69,6 +88,45 @@ export class JobsService {
     }
   }
 
+
+  async updateJob(_id: string, jobId: string, updateJob: any, res: any) {
+    try {
+
+      updateJob.isDraft = false;
+
+      const response = await this.jobRepository.findOneAndUpdate({
+        userId: _id,
+        _id: new Types.ObjectId(jobId)
+      }, updateJob)
+
+      res.status(200).json({
+        data: response,
+        message: 'Job updated successfully'
+      })
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
+
+  async saveToDraft(_id: string, jobId: string, updateJob: any, res: any) {
+    try {
+
+      updateJob.isDraft = true;
+
+      const response = await this.jobRepository.findOneAndUpdate({
+        userId: _id,
+        _id: new Types.ObjectId(jobId)
+      }, updateJob)
+
+      res.status(200).json({
+        data: response,
+        message: 'Job updated successfully'
+      })
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
 
 
 }

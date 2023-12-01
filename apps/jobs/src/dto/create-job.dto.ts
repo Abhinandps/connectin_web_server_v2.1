@@ -28,10 +28,32 @@ export class CreateJobDto {
 }
 
 
-// export class CreateJobDataDto {
-//     @ValidateNested({ each: true })
-//     @Type(() => CreateJobDto)
-//     data: CreateJobDto;
+export class UpdateJobDto {
+    @IsNotEmpty()
+    @IsString()
+    description: string
 
-//     headers: any
-// }
+    @IsNotEmpty()
+    @IsString()
+    skills: string[]
+
+    
+}
+
+
+
+export class UpdateJobDataDto {
+    @ValidateNested({ each: true })
+    @Type(() => UpdateJobDto)
+    data: UpdateJobDto;
+
+    headers: any
+}
+
+export class CreateJobDataDto {
+    @ValidateNested({ each: true })
+    @Type(() => CreateJobDto)
+    data: CreateJobDto;
+
+    headers: any
+}
