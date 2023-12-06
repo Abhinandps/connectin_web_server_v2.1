@@ -36,4 +36,10 @@ export class NotificationsService {
   async sendInvitation(data: any) {
     this.socketClient.emitInvitationToUser(data)
   }
+
+  async send_interview_schedule_notification(data: any) {
+    this.socketClient.emitInterviewSchedule(data)
+  }
+
+
 }

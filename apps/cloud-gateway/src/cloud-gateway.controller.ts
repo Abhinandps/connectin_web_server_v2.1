@@ -20,6 +20,8 @@ export class CloudGatewayController {
     const method = req.method;
     const { userId, email, role, ...rest } = req?.user?.user || {};
     const uploadedFiles = files
+    console.log(uploadedFiles,'file')
+    
     let body = { data: req.body, headers: req.headers, files: uploadedFiles };
 
     const query = {

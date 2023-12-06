@@ -16,7 +16,7 @@ export const cloudinaryStorage = new CloudinaryStorage({
     cloudinary,
     params: (req, file) => {
         console.log(req.body)
-        
+
         const isImage = file.mimetype.startsWith('image/');
         const isVideo = file.mimetype.startsWith('video/');
 
@@ -34,7 +34,12 @@ export const cloudinaryStorage = new CloudinaryStorage({
             };
         } else {
             // Handle other file types or return default parameters
-            return {};
+            return {
+                folder: 'raw_folder',
+                resource_type: 'raw',
+                public_id: 'raw_' + file.originalname,
+            };
+            // return {};
         }
     },
 })

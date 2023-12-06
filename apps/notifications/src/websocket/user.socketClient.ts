@@ -28,8 +28,15 @@ export class SocketClient implements OnModuleInit {
     }
 
     emitInvitationToUser(result: any) {
-        console.log(result,'result')
+        console.log(result, 'result')
         this.socketClient.emit('user_invitation_request', {
+            ...result
+        });
+    }
+
+    emitInterviewSchedule(result: any) {
+        console.log(result, 'schedule')
+        this.socketClient.emit('interview_schedule_notification', {
             ...result
         });
     }

@@ -13,6 +13,7 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer() server: Server;
 
     public socketIdByUserId: Record<string, string> = {}
+    public pendingNotifications = [];
 
     handleConnection(client: Socket) {
         const userId = client.handshake.query.userId as string;
@@ -22,6 +23,27 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
         console.log('Existing Socket Connections:', Object.keys(this.server.sockets.sockets));
 
 
+        if (this.pendingNotifications[userId]) {
+            const recipientSocketId = this.socketIdByUserId[userId];
+
+            if (recipientSocketId) {
+                let recipientSocket: any
+                this.server.sockets.sockets.forEach((value, key) => {
+                    if (key === recipientSocketId) {
+                        recipientSocket = value;
+                    }
+                });
+
+                // Send pending notifications to the connected user
+                for (const notification of this.pendingNotifications[userId]) {
+                    if (recipientSocket) {
+                        recipientSocket.emit('onScheduleToUser', { notification });
+                    }
+                }
+                // Clear pending notifications
+                this.pendingNotifications[userId] = [];
+            }
+        }
     }
 
 
@@ -59,6 +81,34 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
         } else {
             console.log(`Socket ID for user ${receiver} not found.`);
+        }
+    }
+
+
+    @SubscribeMessage('interview_schedule_notification')
+    onEmitScheduleNotification(@MessageBody() body: any, @ConnectedSocket() client: Socket) {
+        const { notification } = body;
+        const userId = notification?.data?.userId
+        const recipientSocketId = this.socketIdByUserId[userId];
+
+        if (recipientSocketId) {
+            let recipientSocket: any
+            this.server.sockets.sockets.forEach((value, key) => {
+                if (key === recipientSocketId) {
+                    recipientSocket = value;
+                }
+            });
+            if (recipientSocket) {
+                recipientSocket.emit('onScheduleToUser', { notification });
+            } else {
+                console.log(`Socket for user ${userId} not found.`);
+            }
+        } else {
+            if (!this.pendingNotifications[userId]) {
+                this.pendingNotifications[userId] = [];
+            }
+            this.pendingNotifications[userId].push(notification);
+            console.log(`Socket ID for user ${userId} not found.`);
         }
     }
 

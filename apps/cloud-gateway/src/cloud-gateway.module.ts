@@ -78,12 +78,13 @@ export class CloudGatewayModule implements NestModule {
     this.serviceRegistry.registerService({
       name: 'jobs',
       urls: ['http://localhost:3006/api/v1/jobs'],
-      openRoutes: []
+      openRoutes: ['/calendly-webhook']
     });
   }
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(CloudinaryMiddleware).forRoutes('posts/utils/upload-files')
+    consumer.apply(CloudinaryMiddleware).forRoutes('jobs/resume')
   }
 }
 

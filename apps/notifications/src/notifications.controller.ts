@@ -16,4 +16,9 @@ export class NotificationsController {
   async sendInvitation(@Payload() data: any) {
     this.notificationsService.sendInvitation(data)
   }
+
+  @EventPattern('send_interview_schedule_notification')
+  async send_interview_schedule_notification(@Payload() data: any) {
+    this.notificationsService.send_interview_schedule_notification(data)
+  }
 }
