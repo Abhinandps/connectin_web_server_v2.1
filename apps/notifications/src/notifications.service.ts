@@ -32,7 +32,6 @@ export class NotificationsService {
     })
   }
 
-
   async sendInvitation(data: any) {
     this.socketClient.emitInvitationToUser(data)
   }

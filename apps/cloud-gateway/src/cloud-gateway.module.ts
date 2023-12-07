@@ -80,6 +80,11 @@ export class CloudGatewayModule implements NestModule {
       urls: ['http://localhost:3006/api/v1/jobs'],
       openRoutes: ['/calendly-webhook']
     });
+    this.serviceRegistry.registerService({
+      name: 'chat',
+      urls: ['http://localhost:3008/api/v1/chat'],
+      openRoutes: ['']
+    });
   }
 
   configure(consumer: MiddlewareConsumer) {

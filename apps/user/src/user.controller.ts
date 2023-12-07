@@ -177,10 +177,18 @@ export class UserController {
     return this.userService.getConnectionRequests(_id, res)
   }
 
+  @Post('search-connections')
+  async searchConnections(@Query() query: string, @Response() res) {
+    const { _id, s }: any = query
+    console.log(_id, s)
+    return this.userService.searchConnections(_id, s, res)
+  }
+
   @Post('my-connections')
   async getConnections(@Query() query: any, @Response() res) {
     const { _id } = query;
-    return this.userService.getConnections(_id, res)
+    const response = await this.userService.getConnections(_id, res)
+    return res.json(response)
   }
 
   @Post(':userId/send-connection-request')

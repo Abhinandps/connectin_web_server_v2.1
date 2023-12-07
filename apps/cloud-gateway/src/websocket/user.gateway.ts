@@ -22,28 +22,52 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.socketIdByUserId[userId] = client.id;
         console.log('Existing Socket Connections:', Object.keys(this.server.sockets.sockets));
 
+        const users = this.socketIdByUserId
 
-        if (this.pendingNotifications[userId]) {
-            const recipientSocketId = this.socketIdByUserId[userId];
 
-            if (recipientSocketId) {
-                let recipientSocket: any
-                this.server.sockets.sockets.forEach((value, key) => {
-                    if (key === recipientSocketId) {
-                        recipientSocket = value;
-                    }
-                });
+        // const recipientSocketId = this.socketIdByUserId[userId];
 
-                // Send pending notifications to the connected user
-                for (const notification of this.pendingNotifications[userId]) {
-                    if (recipientSocket) {
-                        recipientSocket.emit('onScheduleToUser', { notification });
-                    }
-                }
-                // Clear pending notifications
-                this.pendingNotifications[userId] = [];
-            }
-        }
+        // if (recipientSocketId) {
+        //     let recipientSocket: any
+        //     this.server.sockets.sockets.forEach((value, key) => {
+        //         if (key === recipientSocketId) {
+        //             recipientSocket = value;
+        //         }
+        //     });
+
+        //     if (recipientSocket) {
+        //         recipientSocket.emit('get-users', { users });
+        //     }
+        // }
+
+        // send active users to client 
+
+
+        // if (this.pendingNotifications[userId]) {
+        //     const recipientSocketId = this.socketIdByUserId[userId];
+
+        //     if (recipientSocketId) {
+        //         let recipientSocket: any
+        //         this.server.sockets.sockets.forEach((value, key) => {
+        //             if (key === recipientSocketId) {
+        //                 recipientSocket = value;
+        //             }
+        //         });
+
+
+
+        //         // Send pending notifications to the connected user
+        //         for (const notification of this.pendingNotifications[userId]) {
+        //             if (recipientSocket) {
+        //                 recipientSocket.emit('onScheduleToUser', { notification });
+        //             }
+        //         }
+        //         // Clear pending notifications
+        //         this.pendingNotifications[userId] = [];
+        //     }
+        // }
+
+
     }
 
 
@@ -58,6 +82,31 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
     handleUserRequest(userId: string) {
         // Notify a specific user about a request
         this.server.to(userId).emit('userRequest', { message: 'You have a new connection request' });
+    }
+
+    @SubscribeMessage('send-message')
+    onSendMessage(@MessageBody() body: any, @ConnectedSocket() client: Socket) {
+        const { receiverId } = body;
+
+        
+        console.log(body)
+        const recipientSocketId = this.socketIdByUserId[receiverId.userId];
+
+        if (recipientSocketId) {
+            let recipientSocket: any
+            this.server.sockets.sockets.forEach((value, key) => {
+                if (key === recipientSocketId) {
+                    recipientSocket = value;
+                }
+            });
+            if (recipientSocket) {
+                recipientSocket.emit('recieve-message', body);
+            } else {
+                console.log(`Socket for user ${receiverId.userId} not found.`);
+            }
+        } else {
+            console.log(`Socket ID for user ${receiverId.userId} not found.`);
+        }
     }
 
 

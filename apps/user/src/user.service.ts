@@ -747,7 +747,8 @@ export class UserService {
       );
 
 
-      res.json(invitations)
+      return invitations
+
 
     } catch (err) {
       throw new BadRequestException(err.message)
@@ -1030,6 +1031,28 @@ END AS connectionStatus
   }
 
 
+  async searchConnections(_id: string, searchTerm: string, res: any) {
+    try {
+      const regexPattern = new RegExp(searchTerm, 'i');
+
+      const users = await this.getConnections(_id, res)
+
+      if (users.length > 0) {
+
+        // Filter the users
+        const filteredUsers = users.filter((user) => {
+          return user?.firstName.match(regexPattern) || user?.lastName.match(regexPattern);
+        });
+
+        res.json(filteredUsers)
+      }
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
+
 
   // Admin 
   // List All Admins
@@ -1136,7 +1159,6 @@ END AS connectionStatus
     // };
 
     const users = await this.getAllRoleUsers();
-
 
 
     // Filter the users

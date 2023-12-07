@@ -28,6 +28,10 @@ export class UserRepository extends AbstractRepository<User>{
 
 
 
+
+
+
+
 // //  // Custom method to add education information to a user
 // //  async addEducationToUser(userId: string, educationData: Education) {
 // //     const user = await this.userModel.findById(userId);
