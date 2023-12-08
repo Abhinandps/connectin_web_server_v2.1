@@ -16,13 +16,35 @@ export class JobsService {
   ) { }
 
 
-  async getAllJobs(res: any) {
+  async getAllJobs(searchTerm: any, select: any, res: any) {
     try {
+      const regexPattern = new RegExp(searchTerm, 'i');
+      const regexSelect = new RegExp(select, 'i')
       const response = await this.jobRepository.findAll()
 
       if (response.length < 1) {
         return res.status(200).json({
           data: []
+        })
+      }
+
+      if (searchTerm) {
+        const filteredJobs = response.filter((job) => {
+          return job?.employeeLocation.match(regexPattern)
+        })
+
+        return res.status(200).json({
+          data: filteredJobs
+        })
+      }
+
+      if (select) {
+        const filteredJobs = response.filter((job) => {
+          return job?.workPlaceType.match(regexSelect)
+        })
+
+        return res.status(200).json({
+          data: filteredJobs
         })
       }
 

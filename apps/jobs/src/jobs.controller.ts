@@ -8,8 +8,10 @@ export class JobsController {
   constructor(private readonly jobsService: JobsService) { }
 
   @Get()
-  async getAllJobs(@Response() res) {
-    return await this.jobsService.getAllJobs(res)
+  async getAllJobs(@Query() query: any, @Response() res) {
+    const { s, select } = query
+    console.log(select)
+    return await this.jobsService.getAllJobs(s, select, res)
   }
 
   @Get('posted-jobs')
