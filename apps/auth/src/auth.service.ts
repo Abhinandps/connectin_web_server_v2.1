@@ -222,6 +222,21 @@ export class AuthService {
   }
 
 
+
+  async findIdByEmail(email: string) {
+    try {
+      console.log(email)
+      const user = await this.authRepository.findOne({ email: email })
+      console.log(user, ' user')
+      if (user) {
+        return user._id
+      }
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
+
   // from refresh_jwt strategy
   public async validateJwtPayload(payload: JwtPayload) {
     const data = await this.authRepository.findOne({ email: payload.email })

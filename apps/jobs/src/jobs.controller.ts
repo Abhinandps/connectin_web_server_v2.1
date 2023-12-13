@@ -10,7 +10,6 @@ export class JobsController {
   @Get()
   async getAllJobs(@Query() query: any, @Response() res) {
     const { s, select } = query
-    console.log(select)
     return await this.jobsService.getAllJobs(s, select, res)
   }
 
@@ -77,20 +76,21 @@ export class JobsController {
   }
 
 
-
   @Post('calendly-webhook')
-  handleCalendlyWebhook(@Body() eventData: any, @Headers('x-hook-secret') hookSecret: string): string | any {
-    // Validate the webhook payload using the hookSecret
-    // if (this.validateWebhook(eventData, hookSecret)) {
-    //   // Handle the Calendly webhook payload
-    //   // Extract relevant information and process as needed
-    //   return 'Webhook received successfully';
-    // } else {
-    //   // Invalid webhook, handle accordingly (e.g., log and reject)
-    //   return 'Invalid webhook';
-    // }
+  async handleCalendlyWebhook(@Body() eventData: any, @Headers('x-hook-secret') hookSecret: string) {
 
-    console.log(eventData)
+    const { data } = eventData
+    return await this.jobsService.saveScheduledInterview(data)
+  }
+
+  @Post('scheduled-interviews')
+  async getScheduledInterviews(@Query() query: any, @Response() res) {
+    return await this.jobsService.getScheduledInterviews(query, res)
+  }
+
+  @Post('my-interviews')
+  async myInterviews(@Query() query: any, @Response() res) {
+    return await this.jobsService.myInterviews(query, res)
   }
 
 

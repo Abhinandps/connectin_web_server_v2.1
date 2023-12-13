@@ -41,6 +41,4 @@ export class SocketClient implements OnModuleInit {
         });
     }
 
-
-
 }

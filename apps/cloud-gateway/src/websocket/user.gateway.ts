@@ -88,7 +88,7 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
     onSendMessage(@MessageBody() body: any, @ConnectedSocket() client: Socket) {
         const { receiverId } = body;
 
-        
+
         console.log(body)
         const recipientSocketId = this.socketIdByUserId[receiverId.userId];
 
@@ -160,6 +160,10 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log(`Socket ID for user ${userId} not found.`);
         }
     }
+
+
+
+
 
 }
 

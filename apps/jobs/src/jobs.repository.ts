@@ -5,6 +5,7 @@ import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 import { Connection, Model } from "mongoose";
 import { Resumes } from "./schemas/resume.schema";
 import { Apply } from "./schemas/apply.schema";
+import { Scheduled } from "./schemas/scheduled.schema";
 
 @Injectable()
 export class JobRepository extends AbstractRepository<Job>{
@@ -41,6 +42,18 @@ export class ApplyRepository extends AbstractRepository<Apply>{
         @InjectConnection() connection: Connection
     ) {
         super(resumeModel, connection)
+    }
+}
+
+@Injectable()
+export class ScheduledRepository extends AbstractRepository<Scheduled>{
+    protected readonly logger = new Logger(ScheduledRepository.name)
+
+    constructor(
+        @InjectModel(Scheduled.name) scheduleModel: Model<Scheduled>,
+        @InjectConnection() connection: Connection
+    ) {
+        super(scheduleModel, connection)
     }
 }
 

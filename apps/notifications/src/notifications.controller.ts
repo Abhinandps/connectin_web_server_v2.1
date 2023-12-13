@@ -21,4 +21,6 @@ export class NotificationsController {
   async send_interview_schedule_notification(@Payload() data: any) {
     this.notificationsService.send_interview_schedule_notification(data)
   }
+
+
 }

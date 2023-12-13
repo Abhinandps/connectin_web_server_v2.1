@@ -10,8 +10,8 @@ async function bootstrap() {
     origin: 'http://localhost:5173',
     credentials: true,
   })
-  // const kafkaService = app.get<KafkaService>(KafkaService)
-  // app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('PAYMENT'))
+  const kafkaService = app.get<KafkaService>(KafkaService)
+  app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('PAYMENT'))
   const configService = app.get(ConfigService)
   await app.listen(configService.get('PORT'));
   await app.startAllMicroservices();

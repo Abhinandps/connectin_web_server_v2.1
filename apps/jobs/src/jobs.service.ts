@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, Inject } from '@nestjs/common';
 import { CreateJobDto, UpdateJobDto } from './dto/create-job.dto';
-import { ApplyRepository, JobRepository, ResumeRepository } from './jobs.repository';
+import { ApplyRepository, JobRepository, ResumeRepository, ScheduledRepository } from './jobs.repository';
 import { Types } from 'mongoose';
 import { NOTIFICATIONS_SERVICE } from '@app/common';
 import { ClientKafka } from '@nestjs/microservices';
+import axios from 'axios';
+import { ConfigService } from '@nestjs/config';
+import { response } from 'express';
 
 @Injectable()
 export class JobsService {
@@ -12,6 +15,8 @@ export class JobsService {
     private readonly jobRepository: JobRepository,
     private readonly resumeRepository: ResumeRepository,
     private readonly applyRepository: ApplyRepository,
+    private readonly scheduledRepository: ScheduledRepository,
+    private readonly configService: ConfigService,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notifyService: ClientKafka
   ) { }
 
@@ -162,6 +167,146 @@ export class JobsService {
 
   }
 
+
+  async getScheduledInterviews({ _id }: any, res: any) {
+    try {
+      const response = await this.scheduledRepository.find({ userId: _id })
+      res.json(response)
+    } catch (err) {
+      throw new BadRequestException(err.messa)
+    }
+  }
+
+  async myInterviews({ _id }: any, res: any) {
+    try {
+      const response = await this.scheduledRepository.find({ hiringManager: _id })
+      res.json(response)
+    } catch (err) {
+      throw new BadRequestException(err.messa)
+    }
+  }
+
+  async saveScheduledInterview(data: any) {
+    try {
+      const { email, name, scheduled_event, event_type } = data
+
+      const response = await this.createWherebyMeetingRoom(scheduled_event.start_time, scheduled_event.end_time, event_type.name)
+
+
+      const userId = await this.findIdByEmail(email)
+      const correctedJsonString = scheduled_event.event_memberships.replace(/'/g, '"');
+      const dataArray = JSON.parse(correctedJsonString);
+      const userEmail = dataArray[0].user_email;
+      const hiringManagerId = await this.findIdByEmail(userEmail)
+
+      if (response) {
+        const res = await this.scheduledRepository.create({
+          interviewe: email,
+          interviewer: userEmail,
+          userId,
+          hiringManager: hiringManagerId || undefined,
+          eventType: event_type.name,
+          startDate: scheduled_event.start_time,
+          endDate: scheduled_event.end_time,
+          roomName: response.roomName,
+          roomUrl: response.roomUrl,
+          meetingId: response.meetingId,
+          hostRoomUrl: response.hostRoomUrl,
+        })
+
+
+        const formattedStartDate = new Date(scheduled_event.start_time).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
+
+        const notificationContent = {
+          data: {
+            userId,
+            hiringManager: hiringManagerId,
+            meetingId: res.meetingId
+          },
+          message: `📅 Your ${event_type.name} is scheduled for ${formattedStartDate} from ${this.timeFinder(scheduled_event.start_time)} to ${this.timeFinder(scheduled_event.end_time)}. Be prepared and good luck! 🚀.
+          `,
+        };
+
+        const notificationContentHiringManager = {
+          data: {
+            userId: hiringManagerId,
+            meetingId: res.meetingId
+          },
+          message: `📅 Your ${event_type.name}  with ${name} is scheduled for ${formattedStartDate} from ${this.timeFinder(scheduled_event.start_time)} to ${this.timeFinder(scheduled_event.end_time)}.  Please be alert and ready at this time 🙌.
+          `,
+        };
+
+        this.notifyService.emit('send_interview_schedule_notification', {
+          notification: notificationContent,
+        });
+
+        this.notifyService.emit('send_interview_schedule_notification', {
+          notification: notificationContentHiringManager,
+        });
+
+      }
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+
+  }
+
+  private timeFinder(timestamp: any) {
+    const date = new Date(timestamp);
+    const formattedTime = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true
+    }).format(date);
+
+    return formattedTime
+  }
+
+  private async createWherebyMeetingRoom(startTime: string, endTime: string, eventType: string) {
+    try {
+      console.log(startTime, endTime, eventType)
+      const wherebyApiKey = this.configService.get('WHEREBY_API_KEY');
+      console.log(wherebyApiKey)
+      const response = await axios.post('https://api.whereby.dev/v1/meetings', {
+        startDate: startTime,
+        endDate: endTime,
+        fields: ['hostRoomUrl'],
+      }, {
+        headers: {
+          Authorization: `Bearer ${wherebyApiKey}`,
+        },
+      });
+
+
+      return response.data
+
+    } catch (err) {
+      console.error('Error creating meeting:', err.response?.data || err.message);
+      throw new BadRequestException({
+        message: 'Error creating Whereby meeting room',
+        errorDetails: err.response?.data || err.message,
+      });
+    }
+  }
+
+
+  private async findIdByEmail(email: string) {
+    try {
+      const response = await axios.post(`http://localhost:3001/api/v1/auth/getId?email=${email}`);
+
+      return response.data
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
 
   async handleAproval({ _id }: any, data: any, res: any) {
     try {

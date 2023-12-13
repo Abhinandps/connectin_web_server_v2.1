@@ -1,4 +1,4 @@
-import { Body, Controller, ExecutionContext, Get, Logger, Param, Post, Query, Request, Response, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ExecutionContext, Get, Logger, Param, Post, Query, Request, Response, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserRequest, UserChangePasswordDto, UserOtpDto, UserResetDto, UserSignInDto } from './dto/auth-request.dto';
 import { RefreshTokenGuard } from './guards/refresh_token.guard';
@@ -108,6 +108,15 @@ export class AuthController {
   }
 
 
+  @Post('/getId')
+  async findIdByEmail(@Query('email') email: string) {
+    try {
+      return await this.authService.findIdByEmail(email)
+    } catch (err) {
+      throw new BadRequestException(err)
+    }
+  }
+
 
   @UseGuards(RefreshTokenGuard)
   @Get('/validate-token')
@@ -146,6 +155,8 @@ export class AuthController {
     await this.authService.removeAdmin(userID)
     return res.status(200).json({ message: 'success' })
   }
+
+
 
 
 }

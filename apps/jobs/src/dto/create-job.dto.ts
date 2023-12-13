@@ -1,15 +1,6 @@
 import { Type } from "class-transformer";
 import { IsDefined, IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
 
-// class Location {
-//     @IsNotEmpty()
-//     @IsString()
-//     name: string;
-
-//     @IsNotEmpty()
-//     @IsString()
-//     id: string;
-//   }
 
 export class CreateJobDto {
 
