@@ -12,7 +12,7 @@ import { Neo4jService } from './neo4j/neo4j.service';
 import { UserRepository } from './user.repository';
 import { User } from './schemas/user.schema';
 import { RedisService } from '@app/common/redis/redis.service';
-import { NOTIFICATIONS_SERVICE, POST_SERVICE, RedisPubSubService, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
+import { NOTIFICATIONS_SERVICE, POST_SERVICE, RES_GET_FOLLOWED_USERS, RedisPubSubService, USER_FOLLOWS, USER_UNFOLLOWS } from '@app/common';
 import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
 import { SocketClient } from '../../notifications/src/websocket/user.socketClient';
 import { ConnectionRequestDto } from './dto/connection-request.dto';
@@ -198,7 +198,7 @@ export class UserService {
   }
 
   // Get Feed
-  async userFeed(_id: any) {
+  async userFeed(_id: any, postId: string) {
     try {
       const user = await this.userRepository.findOne({ userId: new Types.ObjectId(_id) });
       if (!user) {
@@ -207,6 +207,23 @@ export class UserService {
 
       if (user.feed.length < 1) {
         return []
+      }
+
+      if (postId) {
+        const serviceURL = `${this.configService.get('POST_SERVICE_URI')}/${postId}`;
+
+        const response = await axios({
+          method: 'GET',
+          url: serviceURL,
+          withCredentials: true,
+        })
+
+
+        if (response.status === 200) {
+          return [response.data.data];
+        } else {
+          return { error: 'Error occurred' };
+        }
       }
 
       const feedPromises = user.feed.map(async (pId: any) => {
@@ -299,7 +316,6 @@ export class UserService {
 
 
 
-
   // hashtag management
   async toggleFollowHashtag(request: any, { _id }: any, res: any) {
 
@@ -375,7 +391,7 @@ export class UserService {
   // post event
 
   // single post
-  async handleNewPostCreated({ userId, postId }: any, res: any) {
+  async handleNewPostCreated({ userId, followers, postId }: any, res: any) {
     try {
       const user = await this.getUser(userId)
 
@@ -398,6 +414,25 @@ export class UserService {
       await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
 
 
+      // update feeds for followers
+      if (followers) {
+        const updatePromises = followers.length > 0 && followers.map(async (followerId: string) => {
+          const follower = await this.getUser(followerId)
+          const followerUpdateQuery: Partial<User> = { feed: follower.feed || [] }
+          followerUpdateQuery.feed.unshift(postId)
+
+          // remove after 20 items
+          if (followerUpdateQuery.feed.length > 20) {
+            followerUpdateQuery.feed.splice(20, followerUpdateQuery.feed.length - 20);
+          }
+
+          await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(followerId) }, followerUpdateQuery);
+
+        })
+        await Promise.all(updatePromises);
+      }
+
+
     } catch (err) {
       throw new BadRequestException(err)
     }
@@ -417,6 +452,22 @@ export class UserService {
     console.log(postIds)
 
     postIds.forEach((id: any) => updateQuery.feed.push(id))
+
+    // update it 
+    await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
+
+  }
+
+  // handle post delete
+  async handlePostDelete({ userId, postId }: any, res: any) {
+    const user = await this.getUser(userId);
+
+    if (!user) {
+      throw new BadRequestException('user not found')
+    }
+
+    const updateQuery: Partial<User> = { feed: user.feed || [] }
+    updateQuery.feed = updateQuery.feed.filter((_id: any) => _id !== postId)
 
     // update it 
     await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
@@ -499,6 +550,18 @@ export class UserService {
     }
   }
 
+
+  // get Followed Users Id
+  async getFollowedUsersId(userId: string) {
+    try {
+      const followedUsers = (await this.getFollowers(userId)).map((user: any) => user.userId)
+      return await this.postService.emit(RES_GET_FOLLOWED_USERS, followedUsers.length > 0 ? followedUsers : [])
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
   // subscription
 
   async createSubscription(data: any) {
@@ -526,6 +589,7 @@ export class UserService {
 
   // FOLLOW, CONNECT 
 
+
   async getFollwing(_id: any, res: any) {
     try {
       const query = `
@@ -539,13 +603,11 @@ export class UserService {
 
       const results = await this.neo4jService.read(query, parameters)
 
-
       const response = results.records.map(record => {
         const userNode = record.get('following');
         const neo4jUser = new Neo4jUser(userNode);
         return neo4jUser.toJson();
       });
-
 
       const follows = await Promise.all(
         response.map(async (user) => {
@@ -561,7 +623,7 @@ export class UserService {
     }
   }
 
-  async getFollowers(_id: any, res: any) {
+  async getFollowers(_id: any) {
     try {
       const query = `
       MATCH (u:USER {userId: $userId})<-[:FOLLOWS]-(following:USER)
@@ -581,15 +643,21 @@ export class UserService {
       });
 
 
+      // console.log(response)
+
       const follows = await Promise.all(
         response.map(async (user) => {
-          const connectionStatus = await this.checkFollowStatus(_id, user.userId)
-          return { ...user, connectionStatus }
+          try {
+            const connectionStatus = await this.checkFollowStatus(_id, user?.userId);
+            return { ...user, connectionStatus };
+          } catch (error) {
+            console.error(`Error processing user ${user?.userId}: ${error.message}`);
+          }
         })
       )
 
-      res.json(follows)
 
+      return follows
     } catch (err) {
       throw new BadRequestException(err.message)
     }
@@ -911,6 +979,7 @@ END AS connectionStatus
     const result = await this.neo4jService.read(query, parameters)
 
     const connectionStatus = result.records[0]?.get('connectionStatus');
+
 
     return connectionStatus;
 

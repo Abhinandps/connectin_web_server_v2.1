@@ -18,8 +18,8 @@ async function bootstrap() {
     credentials: true,
   })
   // app.useGlobalPipes(new ValidationPipe())
-  // const kafkaService = app.get<KafkaService>(KafkaService)
-  // app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('USER'))
+  const kafkaService = app.get<KafkaService>(KafkaService)
+  app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('USER'))
   app.useGlobalPipes(new ValidationPipe());
   // app.useGlobalInterceptors(new Neo4jTypeInterceptor())
 

@@ -1,7 +1,7 @@
 import { BadRequestException, Query, Controller, Get, Delete, Param, Post, Put, Req, Res, Body, Response, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
-import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, USER_FOLLOWS, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
+import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, USER_FOLLOWS, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS, DELETE_POST, REQ_GET_FOLLOWED_USERS } from '@app/common';
 import { CreateSubscriptionDto } from '@app/common/dto';
 import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
 import { ConnectionRequestDto } from './dto/connection-request.dto';
@@ -32,6 +32,13 @@ export class UserController {
     return await this.userService.handleNewPostsFromFollowedHashTag(data, res)
   }
 
+  // Post_delete
+  @MessagePattern(DELETE_POST)
+  async handlePostDelete(@Payload() data: any, @Response() res) {
+    return await this.userService.handlePostDelete(data, res)
+  }
+
+
   // REMOVE POSTS FROM USER FEED WHEN HASHTAG UNFOLLOWS
   @MessagePattern(HASHTAG_UNFOLLOWS)
   async handleRemovePostsFromUnFollowedHashTag(@Payload() data: any, @Response() res) {
@@ -47,6 +54,8 @@ export class UserController {
   async handleRemoveUnFollowedUserPostsInFeed(@Payload() data: any, @Response() res) {
     return await this.userService.handleRemoveUnFollowedUserPostsInFeed(data, res)
   }
+
+
 
 
   // TODO:
@@ -93,12 +102,13 @@ export class UserController {
 
   @Get('user/feed')
   async getUserFeed(@Query() query: any, @Response() res, @Req() req: any) {
-    const { _id } = query
-    const response = await this.userService.userFeed(_id);
+    const { _id, postId } = query
+    const response = await this.userService.userFeed(_id, postId);
     return res.status(200).json({
       data: response
     })
   }
+
 
 
   // TODO:
@@ -151,11 +161,14 @@ export class UserController {
     return this.userService.getFollwing(_id, res)
   }
 
+
   @Post('followers')
   async getFollowers(@Query() query: any, @Response() res) {
     const { _id } = query;
-    return this.userService.getFollowers(_id, res)
+    const response = await this.userService.getFollowers(_id)
+    res.json(response)
   }
+
 
   @Post(':followingId/follow')
   async follow(@Query() query: any, @Param('followingId') followingId: string) {

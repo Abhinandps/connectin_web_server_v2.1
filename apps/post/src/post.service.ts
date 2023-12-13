@@ -1,11 +1,11 @@
-import { AUTH_SERVICE, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
+import { AUTH_SERVICE, GET_FOLLOWED_USERS, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS, NOTIFICATIONS_SERVICE, REQ_GET_FOLLOWED_USERS, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
 import { Injectable, Inject, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { CreatePostDto } from './dto/post.dto';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { PostRepository } from './posts.repsitory';
-import { Post } from './schemas/posts.schema';
+import { Likes, Post } from './schemas/posts.schema';
 import { HashTagRepository } from './hashTags.repository';
 import { SaveOptions, Types } from 'mongoose';
 import { repl } from '@nestjs/core';
@@ -21,7 +21,8 @@ export class PostService {
     private readonly configService: ConfigService,
     private readonly postRepository: PostRepository,
     private readonly hashTagRepository: HashTagRepository,
-    private readonly redisPubSubService: RedisPubSubService
+    private readonly redisPubSubService: RedisPubSubService,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notifyService: ClientKafka
   ) {
     this.subscribeToUserProfileUpdates();
   }
@@ -85,6 +86,25 @@ export class PostService {
   }
 
 
+  async getUserLikedPosts({ _id }: any, res: any) {
+    try {
+      const allPosts = await this.postRepository.findAll()
+      
+      const likedPostsIds = allPosts.flatMap((post) =>
+        post.likes.some((like) => like.creator.userId === _id) ? post._id : []
+      )
+      .filter(Boolean)
+
+
+
+      res.json(likedPostsIds)
+
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
+
 
   async createPost(request: CreatePostDto, { _id }: any, res: any) {
 
@@ -144,10 +164,49 @@ export class PostService {
 
       // 4. create an event to store in user feed
 
+
+      const serviceURL = `${this.configService.get('USER_SERVICE_URI')}/followers?_id=${_id}`;
+
+      const followers: any = await axios({
+        method: 'POST',
+        url: serviceURL,
+        withCredentials: true
+      });
+
+      // send to user user_service as event
+      const followedUsersId = followers && followers?.data.map((user: any) => user?.userId)
+
+
+
       const data = {
         postId: response._id,
-        userId: _id
+        userId: _id,
+        followers: followedUsersId
       }
+
+
+      followers?.data.length > 0 && followers?.data.forEach((user: any) => {
+
+        const notificationContent = {
+
+          data: {
+            postId: response._id,
+            userId: user.userId,
+            profileImage: response?.creator?.profileImage
+          },
+
+          message: `${response?.creator?.firstName} ${response?.creator?.lastName} posted: ${response?.title && response.title.slice(0, 50)
+            }...`,
+
+          thumbnail: response?.attachments[0]
+        }
+
+        this.notifyService.emit('send_interview_schedule_notification', {
+          notification: notificationContent
+        })
+
+      })
+
 
       await this.userClient.emit(NEW_POST, data)
 
@@ -165,6 +224,7 @@ export class PostService {
     try {
       // 1. find the post by post id 
       const post = await this.postRepository.findOne({ _id: postId })
+      console.log(request)
 
 
       if (!post) {
@@ -241,9 +301,14 @@ export class PostService {
 
       await this.postRepository.findOneAndRemove({ _id: postId })
 
+      // 4. create an event to store in user feed
+
       const data = {
-        postId: post._id
+        postId: postId,
+        userId: _id
       }
+
+      await this.userClient.emit(NEW_POST, data)
 
       res.status(200).json({
         message: 'Post deleted successfully',
@@ -259,6 +324,7 @@ export class PostService {
   async toggleLikeToPost(postId: string, { _id }: any, res: any) {
     // 1. check if the post with that postId exist
     const post = await this.postRepository.findOne({ _id: postId })
+
     if (!post) {
       // Handle the case where the post with the given ID doesn't exist.
       throw new NotFoundException('Post not found');
@@ -285,6 +351,27 @@ export class PostService {
           profileImage
         }
       }
+
+      if (post?.creator?.userId !== _id) {
+        const notificationContent = {
+
+          data: {
+            postId: post._id,
+            userId: post?.creator?.userId,
+            profileImage: newLike?.creator?.profileImage
+          },
+
+          message: `${newLike?.creator?.firstName} ${newLike?.creator?.lastName} Liked your post: ${post?.title && post.title.slice(0, 50)
+            }...`,
+        }
+
+        this.notifyService.emit('send_interview_schedule_notification', {
+          notification: notificationContent
+        })
+      }
+
+
+
       updates.likes.push(newLike)
     }
 
@@ -303,6 +390,8 @@ export class PostService {
 
   async createComments(postId: string, request: string, { _id }: any, res: any) {
     try {
+      const post = await this.postRepository.findOne({ _id: postId })
+
       const { content }: any = request
       // 1.fetch user data from user service based on _id
       const { firstName, lastName, profileImage, headline } = await this.getUserData(_id)
@@ -323,6 +412,23 @@ export class PostService {
         likes: 0
       }
 
+      if (post?.creator?.userId !== _id) {
+        const notificationContent = {
+
+          data: {
+            postId: post._id,
+            userId: post?.creator?.userId,
+            profileImage: comment?.creator?.profileImage
+          },
+
+          message: `${comment?.creator?.firstName} ${comment?.creator?.lastName} Commented on your post : ${comment?.content}
+          `,
+        }
+
+        this.notifyService.emit('send_interview_schedule_notification', {
+          notification: notificationContent
+        })
+      }
 
 
       const updateQuery = {
@@ -645,7 +751,7 @@ export class PostService {
 
   // HANDLE EVENTNS
 
-  async handleFollowedUserPost({followingId,followerId}: any, res: any) {
+  async handleFollowedUserPost({ followingId, followerId }: any, res: any) {
     try {
       // 1. find the post by user id 
       const posts = await this.postRepository.findAll({
@@ -660,14 +766,14 @@ export class PostService {
 
       const postIds = posts.map((post) => (post._id).toHexString())
 
-      await this.userClient.emit(UPDATE_FEED_USER_FOLLOWS, {postIds,followerId})
+      await this.userClient.emit(UPDATE_FEED_USER_FOLLOWS, { postIds, followerId })
 
     } catch (err) {
       throw new BadRequestException(err)
     }
   }
 
-  async handleUnFollowedUserPost({followingId,followerId}: any, res: any) {
+  async handleUnFollowedUserPost({ followingId, followerId }: any, res: any) {
     try {
       // 1. find the post by user id 
       const posts = await this.postRepository.findAll({
@@ -682,9 +788,9 @@ export class PostService {
 
       const postIds = posts.map((post) => (post._id).toHexString())
 
-      await this.userClient.emit(UPDATE_FEED_USER_UNFOLLOWS, {postIds,followerId})
+      await this.userClient.emit(UPDATE_FEED_USER_UNFOLLOWS, { postIds, followerId })
 
-      
+
 
     } catch (err) {
       throw new BadRequestException(err)

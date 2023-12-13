@@ -36,7 +36,12 @@ export class PostController {
   }
 
 
-  // @UseInterceptors(CloudinaryMiddleware)
+  @Post('liked-posts')
+  async getUserLikedPosts(@Query() query: any, @Response() res) {
+    return await this.postService.getUserLikedPosts(query, res)
+  }
+
+
   @Post('create')
   async createPost(@Query() query: any, @Body() request: { data: CreatePostDto }, @Req() req: any, @Response() res) {
     return await this.postService.createPost(request.data, query, res)
@@ -57,8 +62,9 @@ export class PostController {
 
   @Put('edit/:postID')
   // @UseInterceptors(CloudinaryMiddleware)
-  async updatePost(@Query() query: any, @Param('postID') postId: string, @Body() request, @Req() req: any, @Response() res) {
-    return await this.postService.editPost(postId, request, query, res)
+  async updatePost(@Query() query: any, @Param('postID') postId: string, @Body() request: any, @Req() req: any, @Response() res) {
+    console.log(request.data)
+    return await this.postService.editPost(postId, request.data, query, res)
   }
 
 
