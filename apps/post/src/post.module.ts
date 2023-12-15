@@ -12,6 +12,7 @@ import { HashTag, HashTagSchema } from './schemas/hashTag.schema';
 import { HashTagRepository } from './hashTags.repository';
 import { USER_SERVICE } from './constant/services';
 
+
 @Module({
   imports: [
     KafkaModule,

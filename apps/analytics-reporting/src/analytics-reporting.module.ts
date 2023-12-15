@@ -5,12 +5,14 @@ import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi'
 import { MongooseModule } from '@nestjs/mongoose';
 import { Report, ReportSchema } from './schemas/report.schema';
-import { AUTH_SERVICE, DatabaseModule } from '@app/common';
+import { AUTH_SERVICE, DatabaseModule, KafkaModule } from '@app/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ReportsRepository } from './reports.repository';
+import { USER_SERVICE } from './constant/services';
 
 @Module({
   imports: [
+    KafkaModule,
     MongooseModule.forFeature([
       { name: Report.name, schema: ReportSchema }
     ]),
@@ -27,6 +29,18 @@ import { ReportsRepository } from './reports.repository';
           }
         }
       },
+      {
+        name: USER_SERVICE,
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+          },
+          consumer: {
+            groupId: `${USER_SERVICE}-consumer`
+          }
+        }
+      }
     ]),
     ConfigModule.forRoot({
       isGlobal: true,

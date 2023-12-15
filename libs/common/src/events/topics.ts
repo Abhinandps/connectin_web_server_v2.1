@@ -3,6 +3,7 @@ export const NEW_POST = 'newPost';
 export const NEW_POSTS = 'newPosts';
 export const DELETE_POST = 'deletePost';
 export const NEW_COMMENT = 'newComment';
+export const REPORT_POST = 'reportPost';
 export const USER_FOLLOWS = 'userFollows';
 export const USER_UNFOLLOWS = 'userUnFollows';
 export const HASHTAG_FOLLOWS = 'hashtagFollows';

@@ -12,11 +12,8 @@ export class Report extends AbstractDocument {
     @Prop({ type: String, required: true })
     post_id: string;
 
-    @Prop({ type: String, required: true })
+    @Prop({ type: String })
     report_type: string;
-
-    @Prop({ type: Number, default: 0 })
-    report_count: number;
 }
 
 

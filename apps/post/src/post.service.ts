@@ -1,4 +1,4 @@
-import { AUTH_SERVICE, GET_FOLLOWED_USERS, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS, NOTIFICATIONS_SERVICE, REQ_GET_FOLLOWED_USERS, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
+import { AUTH_SERVICE, DELETE_POST, GET_FOLLOWED_USERS, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS, NOTIFICATIONS_SERVICE, REQ_GET_FOLLOWED_USERS, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
 import { Injectable, Inject, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { CreatePostDto } from './dto/post.dto';
@@ -89,11 +89,11 @@ export class PostService {
   async getUserLikedPosts({ _id }: any, res: any) {
     try {
       const allPosts = await this.postRepository.findAll()
-      
+
       const likedPostsIds = allPosts.flatMap((post) =>
         post.likes.some((like) => like.creator.userId === _id) ? post._id : []
       )
-      .filter(Boolean)
+        .filter(Boolean)
 
 
 
@@ -164,6 +164,7 @@ export class PostService {
 
       // 4. create an event to store in user feed
 
+      // fetch all followed users ids
 
       const serviceURL = `${this.configService.get('USER_SERVICE_URI')}/followers?_id=${_id}`;
 
@@ -276,6 +277,7 @@ export class PostService {
 
   async deletePost(postId: string, request: any, { _id }: any, res: any) {
     try {
+      console.log(postId, 'post id founded ')
       // 1. find the post by post id 
       const post = await this.postRepository.findOne({ _id: postId })
 
@@ -288,7 +290,7 @@ export class PostService {
       // 2. compiring the _id in the request with userId stored in the post.
       const user_id = post.creator.userId
 
-      if (user_id !== _id) { // TODO:role chechs to delete include later
+      if (user_id !== _id) { // TODO:role checks to delete include later
         throw new UnauthorizedException('Unauthorized to edit this post')
       }
 
@@ -301,14 +303,27 @@ export class PostService {
 
       await this.postRepository.findOneAndRemove({ _id: postId })
 
-      // 4. create an event to store in user feed
+      // 4. create an event to delete in user feed
+
+      const serviceURL = `${this.configService.get('USER_SERVICE_URI')}/followers?_id=${_id}`;
+
+      const followers: any = await axios({
+        method: 'POST',
+        url: serviceURL,
+        withCredentials: true
+      });
+
+      // send to user user_service as event
+      const followedUsersId = followers && followers?.data.map((user: any) => user?.userId)
+
 
       const data = {
         postId: postId,
-        userId: _id
+        userId: _id,
+        followers: followedUsersId
       }
 
-      await this.userClient.emit(NEW_POST, data)
+      await this.userClient.emit(DELETE_POST, data)
 
       res.status(200).json({
         message: 'Post deleted successfully',
@@ -562,21 +577,21 @@ export class PostService {
 
 
   // report a post
-  async reportPost(postId: string, request: any, { _id }: any, res: any) {
-    try {
-      const serviceURL = `${this.configService.get('REPORT_SERVICE_URI')}/${postId}/report`;
+  // async reportPost({ _id }: any, postId: string, data: any, res: any) {
+  //   try {
+  //     const serviceURL = `${this.configService.get('REPORT_SERVICE_URI')}/${postId}/report`;
 
-      const response = await axios({
-        method: 'POST',
-        url: serviceURL,
-        data: request,
-        withCredentials: true
-      });
+  //     const response = await axios({
+  //       method: 'POST',
+  //       url: serviceURL,
+  //       data,
+  //       withCredentials: true
+  //     });
 
-    } catch (err) {
-      throw new BadRequestException(err)
-    }
-  }
+  //   } catch (err) {
+  //     throw new BadRequestException(err)
+  //   }
+  // }
 
 
 

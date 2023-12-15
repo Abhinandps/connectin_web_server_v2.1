@@ -58,7 +58,7 @@ export class CloudGatewayModule implements NestModule {
     this.serviceRegistry.registerService({
       name: 'auth',
       urls: ['http://localhost:3001/api/v1/auth'],
-      openRoutes: ['/login','/register']
+      openRoutes: ['/login', '/register']
     });
     this.serviceRegistry.registerService({
       name: 'users',
@@ -69,6 +69,11 @@ export class CloudGatewayModule implements NestModule {
       name: 'posts',
       urls: ['http://localhost:3003/api/v1/posts'],
       openRoutes: ['/utils/upload-files', '/:postID']
+    });
+    this.serviceRegistry.registerService({
+      name: 'reports',
+      urls: ['http://localhost:3004/api/v1/reports'],
+      openRoutes: ['']
     });
     this.serviceRegistry.registerService({
       name: 'payments',

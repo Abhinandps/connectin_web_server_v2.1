@@ -98,11 +98,12 @@ export class PostController {
     return await this.postService.createCommentsReply(postId, commentId, request, query, res)
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post(':postID/report')
-  async reportPost(@Param('postID') postId: string, @Body() request: string, @Req() req: any, @Response() res) {
-    return await this.postService.reportPost(postId, request, req.user, res)
-  }
+
+  // @Post(':postID/report')
+  // async reportPost(@Query() query: any, @Param('postID') postId: string, @Body() request: string, @Req() req: any, @Response() res) {
+  //   return await this.postService.reportPost(query, postId,request.data, res)
+  // }
+
 
   /* TODO: 
 

@@ -459,9 +459,9 @@ export class UserService {
   }
 
   // handle post delete
-  async handlePostDelete({ userId, postId }: any, res: any) {
+  async handlePostDelete({ userId, followers, postId }: any, res: any) {
     const user = await this.getUser(userId);
-
+    console.log({ userId, followers, postId })
     if (!user) {
       throw new BadRequestException('user not found')
     }
@@ -472,7 +472,53 @@ export class UserService {
     // update it 
     await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
 
+    // update feeds for followers
+    if (followers) {
+      const updatePromises = followers.length > 0 && followers.map(async (followerId: string) => {
+        const follower = await this.getUser(followerId)
+        // console.log(follower)
+        const followerUpdateQuery: Partial<User> = { feed: follower.feed || [] }
+        followerUpdateQuery.feed = followerUpdateQuery.feed.filter((id: any) => id !== postId)
+
+
+        console.log(followerUpdateQuery)
+
+        // remove after 20 items
+        if (followerUpdateQuery.feed.length > 20) {
+          followerUpdateQuery.feed.splice(20, followerUpdateQuery.feed.length - 20);
+        }
+
+        await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(followerId) }, followerUpdateQuery);
+
+      })
+      await Promise.all(updatePromises);
+    }
+
   }
+
+
+  async handleReportPost({ userId, postId }: any, res: any) {
+    try {
+
+      const user = await this.getUser(userId);
+
+      if (!user) {
+        throw new BadRequestException('user not found')
+      }
+
+      const updateQuery: Partial<User> = { feed: user.feed || [] }
+
+      updateQuery.feed = updateQuery.feed.filter((_id: any) => _id !== postId)
+
+      // update it 
+      await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
+      
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+
+  }
+
 
 
   async handleRemovePostsFromUnFollowedHashTag({ userId, postIds }: any, res: any) {

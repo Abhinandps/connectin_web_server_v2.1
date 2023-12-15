@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, UseGuards, Response, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards, Response, Param, Query } from '@nestjs/common';
 import { AnalyticsReportingService } from './analytics-reporting.service';
 import { JwtAuthGuard } from '@app/common';
 
@@ -11,10 +11,9 @@ export class AnalyticsReportingController {
     return this.analyticsReportingService.getHello();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post(':postID/report')
-  async createReport(@Body() request: any, @Param('postID') postId: string, @Req() req: any, @Response() res) {
-    return await this.analyticsReportingService.createReport(request, postId, req.user, res)
+  async createReport(@Body() request: any, @Query() query: any, @Param('postID') postId: string, @Response() res) {
+    return await this.analyticsReportingService.createReport(request.data, postId, query, res)
   }
 
 

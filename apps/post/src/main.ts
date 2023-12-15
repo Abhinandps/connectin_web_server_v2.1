@@ -8,8 +8,8 @@ import { KafkaOptions } from '@nestjs/microservices';
 async function bootstrap() {
   const app = await NestFactory.create(PostModule);
   app.useGlobalPipes(new ValidationPipe());
-  // const kafkaService = app.get<KafkaService>(KafkaService)
-  // app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('POST'))
+  const kafkaService = app.get<KafkaService>(KafkaService)
+  app.connectMicroservice<KafkaOptions>(kafkaService.getOptions('POST'))
   app.enableCors({
     origin: 'http://localhost:3000',
     credentials: true,

@@ -1,7 +1,7 @@
 import { BadRequestException, Query, Controller, Get, Delete, Param, Post, Put, Req, Res, Body, Response, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
-import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, USER_FOLLOWS, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS, DELETE_POST, REQ_GET_FOLLOWED_USERS } from '@app/common';
+import { JwtAuthGuard, NEW_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, USER_FOLLOWS, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS, DELETE_POST, REQ_GET_FOLLOWED_USERS, REPORT_POST } from '@app/common';
 import { CreateSubscriptionDto } from '@app/common/dto';
 import { UpdateUserDto, UserDto } from './dto/user-updated.dto';
 import { ConnectionRequestDto } from './dto/connection-request.dto';
@@ -13,9 +13,14 @@ export class UserController {
 
   // FIXME: remove unwanted code 
 
-  @EventPattern('create_user')
+  @MessagePattern('create_user')
   async handleUserCreated(@Payload() data: any) {
     this.userService.createUser(data)
+  }
+
+  @MessagePattern('test')
+  async handleTest(@Payload() data: any) {
+    console.log(data)
   }
 
   // Feed UptoDate
@@ -36,6 +41,12 @@ export class UserController {
   @MessagePattern(DELETE_POST)
   async handlePostDelete(@Payload() data: any, @Response() res) {
     return await this.userService.handlePostDelete(data, res)
+  }
+
+  // Report Post
+  @MessagePattern(REPORT_POST)
+  async handleReportPost(@Payload() data: any, @Response() res) {
+    return await this.userService.handleReportPost(data, res);
   }
 
 
