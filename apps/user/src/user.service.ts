@@ -491,7 +491,8 @@ export class UserService {
         await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(followerId) }, followerUpdateQuery);
 
       })
-      await Promise.all(updatePromises);
+      
+      followers && await Promise.all(updatePromises);
     }
 
   }
@@ -512,7 +513,7 @@ export class UserService {
 
       // update it 
       await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateQuery)
-      
+
     } catch (err) {
       throw new BadRequestException(err.message)
     }
@@ -1290,7 +1291,7 @@ END AS connectionStatus
 
 
   // add admin
-  async addAdmin(userID: string) {
+  async addAdmin({ _id }: any, userID: string) {
 
     try {
       const serviceURL = `${this.configService.get('AUTH_SERVICE_URI')}/${userID}/add-admin`;
@@ -1303,11 +1304,73 @@ END AS connectionStatus
 
       const data = response.data
 
+      if (data) {
+        const service = `${this.configService.get('CHAT_SERVICE_URI')}/create`;
+
+        const data = {
+          sender: _id,
+          receiver: userID
+        }
+
+        const response: any = await axios({
+          method: 'POST',
+          data: { data },
+          url: service,
+          withCredentials: true
+        })
+
+        console.log(response)
+
+        const receiver = response.data.participants.find((user: any) => user.userId === userID)
+
+        const sender = response.data.participants.find((user: any) => user.userId === _id)
+
+        const message = `
+          <div>
+          <p>Dear <b>${receiver.firstName} ${receiver.lastName}</b>,</p>
+          <br/>
+          <p>We are pleased to inform you that you have been promoted 🎉 to the role of <i> Content Moderator </i> for Connect In App. Congratulations on your new position! As a Content Moderator, your responsibilities will involve ensuring that all content aligns with the privacy and policies set forth by our company.</p>
+
+          <p>Your attention to detail and commitment to upholding our standards will be crucial in maintaining a safe and positive user experience. We trust that you will approach this role with dedication and professionalism.</p>
+
+          <p>Best of luck in your new position. We have confidence in your ability to excel in maintaining the integrity of our platform.</p>
+          <br/>
+          <p>Sincerely ,</p>
+          <br/>
+          <br/>
+          <p ><b> ${sender?.firstName} ${sender?.lastName}</b></p>
+          <p><i>(Connect In Admin)</i></p>
+          </div>
+          `
+
+        if (response) {
+          const addservice = `${this.configService.get('CHAT_SERVICE_URI')}/add`;
+
+          const data = {
+            chatId: response?.data?._id,
+            senderId: _id,
+            text: message
+          }
+
+          console.log(data)
+
+          await axios({
+            method: 'POST',
+            data: { data },
+            url: addservice,
+            withCredentials: true
+          })
+
+        }
+
+      }
+
 
       return data
 
     } catch (err) {
-      throw new BadRequestException(err)
+
+      throw new BadRequestException(err.message)
     }
 
   }

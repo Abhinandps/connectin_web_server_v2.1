@@ -367,7 +367,7 @@ export class JobsService {
       //   resume: ${applyJob?.resume},
       `)
 
-      await this.applyRepository.create({
+      const response = await this.applyRepository.create({
         userId: _id,
         hiringManager: applyJob?.hiringManager,
         email: applyJob?.email,
@@ -376,6 +376,8 @@ export class JobsService {
         resume: applyJob?.resume,
         isApproved: false
       })
+
+      res.json(response)
 
     } catch (err) {
       throw new BadRequestException(err.message)

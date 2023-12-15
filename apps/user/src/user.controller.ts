@@ -257,10 +257,10 @@ export class UserController {
 
 
   @Get(':id/search-suggestion')
-  async search(@Query('query') query: string, @Response() res) {
-
-    const response = await this.userService.search(query);
-    return res.status(200).json({
+  async search(@Query() query: string, @Response() res) {
+    const { _id, s }: any = query
+    const response = await this.userService.search(s);
+    res.status(200).json({
       data: response
     })
   }
@@ -268,8 +268,8 @@ export class UserController {
 
 
   @Post(':userID/add-admin')
-  async addAdmin(@Response() res, @Param('userID') userID: string) {
-    const response = await this.userService.addAdmin(userID);
+  async addAdmin(@Query() query: string, @Response() res, @Param('userID') userID: string) {
+    const response = await this.userService.addAdmin(query, userID);
     return res.status(200).json({
       data: response
     })

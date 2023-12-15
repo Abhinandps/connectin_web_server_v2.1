@@ -33,7 +33,7 @@ export class Chat extends AbstractDocument {
             },
         ],
     })
-    messages: Array<{ sender: string; content: string; timestamp: Date, isViewed: boolean }>;
+    messages: Array<{ sender: string; content: string | any; timestamp: Date, isViewed: boolean }>;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);
