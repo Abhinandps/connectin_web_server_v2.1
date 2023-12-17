@@ -162,6 +162,8 @@ export class UserService {
       RETURN u
       `, { userId });
 
+      console.log(user, 'response')
+
       const res = await this.hydrate(user)
 
       // const result = await Promise.all(
@@ -174,6 +176,8 @@ export class UserService {
 
       const followStatus = await this.checkFollowStatus(_id, res.userId)
       const connectionStatus = await this.checkConnectionStatus(_id, res.userId)
+
+    
 
       const result = { ...res, followStatus, connectionStatus }
 
@@ -252,8 +256,10 @@ export class UserService {
 
   // Update profiles
 
-  async updateUserProfile(_id: any, requestData: UserDto) {
+  async updateUserProfile(_id: any, requestData: UserDto, res: any) {
     try {
+
+      console.log(requestData,'// request data')
 
 
       // update it 
@@ -276,7 +282,8 @@ export class UserService {
 
       await this.updateUserProfileNeo4j(_id, requestData)
 
-      return updatedUser;
+      res.json(updatedUser)
+
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -305,6 +312,8 @@ export class UserService {
         profileImage: data?.profileImage,
         coverImage: data?.coverImage,
       };
+
+      console.log(data?.headline,'headline')
 
       const result = await this.neo4jService.write(query, parameters);
       return result
@@ -491,7 +500,7 @@ export class UserService {
         await this.userRepository.findOneAndUpdate({ userId: new Types.ObjectId(followerId) }, followerUpdateQuery);
 
       })
-      
+
       followers && await Promise.all(updatePromises);
     }
 

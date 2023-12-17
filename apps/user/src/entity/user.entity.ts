@@ -14,9 +14,9 @@ export class Neo4jUser {
     }
 
     toJson(): Record<string, any> {
-        const { userId, firstName, lastName, profileImage, coverImage } = <Record<string, any>>this.node.properties
-        
-        return { userId, firstName, lastName, profileImage, coverImage }
+        const { userId, firstName, lastName, headline, profileImage, coverImage } = <Record<string, any>>this.node.properties
+
+        return { userId, firstName, lastName, headline, profileImage, coverImage }
     }
 }
 

@@ -67,7 +67,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
     async findOneAndUpdate(
         filterQuery: FilterQuery<TDocument>,
-        update: UpdateQuery<TDocument> ,
+        update: UpdateQuery<TDocument>,
     ) {
         const document = await this.model.findOneAndUpdate(filterQuery, update, {
             lean: true,
@@ -81,6 +81,24 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
         return document;
     }
+
+    async updateMany(
+        filterQuery: FilterQuery<TDocument>,
+        update: UpdateQuery<TDocument>,
+    ) {
+        const result = await this.model.updateMany(filterQuery, update, {
+            lean: true,
+            new: true,
+        });
+
+        if (result.modifiedCount === 0) {
+            this.logger.warn(`No documents were updated with filterQuery:`, filterQuery);
+            throw new NotFoundException('No documents were updated.');
+        }
+
+        return result;
+    }
+
 
     async findOneAndRemove(filterQuery: FilterQuery<TDocument>) {
         const document = await this.model.findOneAndRemove(filterQuery, {

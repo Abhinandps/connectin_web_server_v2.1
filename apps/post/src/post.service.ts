@@ -32,7 +32,7 @@ export class PostService {
     this.redisPubSubService.subscribe('user-profile-updates', async (message) => {
       const { userId, data } = JSON.parse(message)
 
-      console.log(data);
+      console.log(data, 'from here');
 
 
       const postToUpdate = await this.postRepository.find({ 'creator.userId': userId })
@@ -42,7 +42,11 @@ export class PostService {
       updates['creator.profileImage'] = data?.profileImage;
       updates['creator.headline'] = data?.headline;
 
-      await this.postRepository.findOneAndUpdate({ _id: new Types.ObjectId(postToUpdate[0]._id) }, { $set: updates })
+      postToUpdate.forEach(async (post) => {
+        await this.postRepository.findOneAndUpdate({ _id: new Types.ObjectId(post._id) }, { $set: updates })
+      })
+
+
     });
   }
 

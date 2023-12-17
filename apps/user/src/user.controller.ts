@@ -138,7 +138,7 @@ export class UserController {
   async updateUserProile(@Query() query: any, @Response() res, @Body() requestData: UpdateUserDto) {
     const { _id } = query;
 
-    return this.userService.updateUserProfile(_id, requestData.data)
+    return this.userService.updateUserProfile(_id, requestData.data,res)
   }
 
 
