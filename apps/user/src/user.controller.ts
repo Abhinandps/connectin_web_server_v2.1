@@ -92,6 +92,16 @@ export class UserController {
   }
 
 
+  @Post('recommendations')
+  async getRecommendations(@Query() query: any, @Response() res) {
+    const { _id } = query;
+    const response = await this.userService.getRecommendations(_id)
+    res.status(200).json({
+      data: response
+    })
+  }
+
+
   @Get('user')
   async getAllRoleUsers(@Response() res) {
     const response = await this.userService.getAllRoleUsers();
@@ -138,7 +148,7 @@ export class UserController {
   async updateUserProile(@Query() query: any, @Response() res, @Body() requestData: UpdateUserDto) {
     const { _id } = query;
 
-    return this.userService.updateUserProfile(_id, requestData.data,res)
+    return this.userService.updateUserProfile(_id, requestData.data, res)
   }
 
 
@@ -184,6 +194,7 @@ export class UserController {
   @Post(':followingId/follow')
   async follow(@Query() query: any, @Param('followingId') followingId: string) {
     const { _id } = query;
+    console.log(followingId)
     return this.userService.follow(_id, followingId)
   }
 

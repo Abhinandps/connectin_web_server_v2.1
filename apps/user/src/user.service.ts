@@ -177,7 +177,7 @@ export class UserService {
       const followStatus = await this.checkFollowStatus(_id, res.userId)
       const connectionStatus = await this.checkConnectionStatus(_id, res.userId)
 
-    
+
 
       const result = { ...res, followStatus, connectionStatus }
 
@@ -185,6 +185,29 @@ export class UserService {
 
       return result
 
+    } catch (err) {
+      throw new BadRequestException(err.message)
+    }
+  }
+
+  async getRecommendations(_id: string) {
+    try {
+      const users = await this.neo4jService.read(`
+      MATCH (user:USER {userId: $userId})-[:CONNECTED]-(common:USER)-[:CONNECTED]-(recommended:USER) 
+      WHERE NOT (user)-[:CONNECTED]-(recommended)
+      return DISTINCT recommended
+      `, { userId: _id })
+
+      const res = await Promise.all(users.records.map(async (record) => {
+        const userNode = record.get('recommended');
+        const neo4jUser = new Neo4jUser(userNode);
+        const connectionStatus = await this.checkConnectionStatus(_id, neo4jUser.getUserId());
+        const followStatus = await await this.checkFollowStatus(_id, neo4jUser.getUserId());
+        const result = { ...neo4jUser.toJson(), followStatus, connectionStatus };
+        return result;
+      }));
+
+      return res;
     } catch (err) {
       throw new BadRequestException(err.message)
     }
@@ -259,7 +282,7 @@ export class UserService {
   async updateUserProfile(_id: any, requestData: UserDto, res: any) {
     try {
 
-      console.log(requestData,'// request data')
+      console.log(requestData, '// request data')
 
 
       // update it 
@@ -313,7 +336,7 @@ export class UserService {
         coverImage: data?.coverImage,
       };
 
-      console.log(data?.headline,'headline')
+      console.log(data?.headline, 'headline')
 
       const result = await this.neo4jService.write(query, parameters);
       return result
@@ -742,6 +765,23 @@ export class UserService {
 
 
       await this.postService.emit(USER_FOLLOWS, { followingId, followerId })
+
+      const user = await this.getOneUser(followingId, followerId,)
+
+      if (user) {
+
+        const notificationContent = {
+          data: {
+            userId: followingId,
+            profileImage: user?.profileImage
+          },
+          message: `${user?.firstName} ${user?.lastName} followed you.`,
+        }
+
+        this.notifyService.emit('send_interview_schedule_notification', {
+          notification: notificationContent
+        })
+      }
 
       return result
 
