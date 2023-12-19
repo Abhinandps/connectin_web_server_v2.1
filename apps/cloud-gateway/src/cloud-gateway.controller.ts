@@ -15,49 +15,56 @@ export class CloudGatewayController {
   @All(':serviceName/*')
   async forwardRequest(@Request() req, @Response() res, @UploadedFiles() files) {
 
-    const serviceName = req.params.serviceName;
-    const path = req.params[0];
-    const method = req.method;
-    const { userId, email, role, ...rest } = req?.user?.user || {};
-    const uploadedFiles = files
-    console.log(uploadedFiles,'file')
-    
-    let body = { data: req.body, headers: req.headers, files: uploadedFiles };
+    try {
+      const serviceName = req.params.serviceName;
+      const path = req.params[0];
+      const method = req.method;
+      const { userId, email, role, ...rest } = req?.user?.user || {};
+      const uploadedFiles = files
+      // console.log(uploadedFiles, 'file')
 
-    const query = {
-      ...req.query,
-      ...(userId && { _id: userId }),
-      ...(email && { email }),
-      ...(role && { role })
-    };
+      let body = { data: req.body, headers: req.headers, files: uploadedFiles };
 
-    const result = await this.cloudGatewayService.forwardRequest(serviceName, path, method, body, query, res);
+      const query = {
+        ...req.query,
+        ...(userId && { _id: userId }),
+        ...(email && { email }),
+        ...(role && { role })
+      };
 
-    const response = result?.data
+      const result = await this.cloudGatewayService.forwardRequest(serviceName, path, method, body, query, res);
 
-    if (response?.access_token_expires_at) {
-      res.cookie('access_token', response.access_token, {
-        httpOnly: false,
-        path: '/',
-        expires: new Date(response.access_token_expires_at),
-        domain: 'localhost',
-        sameSite: 'None',
-        secure: true
-      });
+      const response = result?.data
+
+      // Set response headers
+      // res.header('Content-Type', 'application/json');
+
+      if (response?.access_token_expires_at) {
+        res.cookie('access_token', response.access_token, {
+          httpOnly: false,
+          path: '/',
+          expires: new Date(response.access_token_expires_at),
+          domain: 'localhost',
+          sameSite: 'None',
+          secure: true
+        });
+      }
+
+      if (response?.refresh_token_expires_at) {
+        res.cookie('refresh_token', response.refresh_token, {
+          httpOnly: false,
+          path: '/',
+          expires: new Date(response.refresh_token_expires_at),
+          domain: 'localhost',
+          sameSite: 'None',
+          secure: true
+        });
+      }
+
+      res.json(result?.data);
+    } catch (err) {
+
     }
-
-    if (response?.refresh_token_expires_at) {
-      res.cookie('refresh_token', response.refresh_token, {
-        httpOnly: false,
-        path: '/',
-        expires: new Date(response.refresh_token_expires_at),
-        domain: 'localhost',
-        sameSite: 'None',
-        secure: true
-      });
-    }
-
-    res.json(result?.data);
 
   }
 

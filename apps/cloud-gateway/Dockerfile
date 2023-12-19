@@ -7,12 +7,10 @@ COPY tsconfig.json tsconfig.json
 
 RUN npm install
 
-COPY apps/auth apps/auth
+COPY apps/auth apps/cloud-gateway
 COPY libs libs
 
-RUN cd apps/auth && npm install
-
-RUN npm run build auth
+RUN npm run build cloud-gateway
 
 FROM node:alpine as production
 
@@ -20,16 +18,17 @@ ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/src/app
-ENV PORT 3001
-EXPOSE 3001
+ENV PORT 3000
+EXPOSE 3000
 
 COPY package*.json ./
 
 RUN npm install --only=production
 
+# COPY . .
 
 COPY --from=development /usr/src/app/dist ./dist
 
-CMD ["node", "dist/apps/auth/main"]
+CMD ["node", "dist/apps/cloud-gateway/main"]
 
 

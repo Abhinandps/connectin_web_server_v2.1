@@ -1,7 +1,7 @@
 
 import { ConfigService } from '@nestjs/config';
 import { Injectable, NotFoundException, UnauthorizedException, HttpException, HttpStatus, BadRequestException, UseGuards, Get, Request, Response } from '@nestjs/common';
-import  CircuitBreaker from 'opossum';
+import CircuitBreaker from 'opossum';
 import { AxiosResponse } from 'axios';
 import { Observable } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
@@ -65,27 +65,41 @@ export class CloudGatewayService {
           throw new Error(`Unsupported method: ${method}`);
       }
     } catch (error) {
+      // if (error.response?.status === 404) {
+      //   console.error(`Downstream service responded with a 404 error.`);
+      //   res.send(error?.response?.data)
+      // } else if (error.response?.status === 401) {
+      //   console.error('Downstream service responded with a 401 error.');
+      //   res.send(error?.response?.data)
+      // } else {
+      //   console.error(`Error forwarding request: ${error.message}`);
+      //   res.send(error?.response?.data)
+      // }
+
       if (error.response?.status === 404) {
         console.error(`Downstream service responded with a 404 error.`);
-        res.send(error?.response?.data)
-      } else if (error.response?.status === 401) {
+        res.status(404).send(error?.response?.data);
+      } 
+      else if (error.response?.status === 401) {
         console.error('Downstream service responded with a 401 error.');
-        res.send(error?.response?.data)
-      } else {
+        res.status(401).send(error?.response?.data);
+      } 
+      else {
         console.error(`Error forwarding request: ${error.message}`);
-        res.send(error?.response?.data)
+        res.status(500).send({ error: 'Internal Server Error' });
       }
-    }
+
   }
+}
 
 
-  async forwardRequest(serviceName: string, path: string, method: string, body: any, query: any, res: any): Promise<AxiosResponse<any>> {
-    let breaker = this.circuitBreakers.get(serviceName);
-    if (!breaker) {
-      breaker = this.createCircuitBreaker(serviceName);
-    }
+  async forwardRequest(serviceName: string, path: string, method: string, body: any, query: any, res: any): Promise < AxiosResponse < any >> {
+  let breaker = this.circuitBreakers.get(serviceName);
+  if(!breaker) {
+    breaker = this.createCircuitBreaker(serviceName);
+  }
     return breaker.fire(serviceName, path, method, body, query, res);
-  }
+}
 
 
 

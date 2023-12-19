@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserRequest, DataDto, UserChangePasswordDto, UserSignInDto } from './dto/auth-request.dto';
 import { AuthRepository } from './auth.repository';
-import * as bcrypt from 'bcrypt'
+import * as bcrypt from 'bcryptjs'
 import { User } from './schemas/user.schema';
 import { ObjectId, SaveOptions } from 'mongoose';
 import { USER_SERVICE } from './constant/services';

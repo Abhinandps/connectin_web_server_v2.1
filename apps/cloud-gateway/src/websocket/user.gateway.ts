@@ -17,10 +17,10 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     handleConnection(client: Socket) {
         const userId = client.handshake.query.userId as string;
-        console.log(`Client connected: ${client.id} User ID : ${userId}`);
+        // console.log(`Client connected: ${client.id} User ID : ${userId}`);
 
         this.socketIdByUserId[userId] = client.id;
-        console.log('Existing Socket Connections:', Object.keys(this.server.sockets.sockets));
+        // console.log('Existing Socket Connections:', Object.keys(this.server.sockets.sockets));
 
         const users = this.socketIdByUserId
 
@@ -72,7 +72,7 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
     handleDisconnect(client: Socket) {
-        console.log(`Client disconnected: ${client.id}`);
+        // console.log(`Client disconnected: ${client.id}`);
 
         // Remove the mapping when a client disconnects
         const userId = Object.keys(this.socketIdByUserId).find(key => this.socketIdByUserId[key] === client.id);
@@ -102,10 +102,10 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (recipientSocket) {
                 recipientSocket.emit('recieve-message', body);
             } else {
-                console.log(`Socket for user ${receiverId.userId} not found.`);
+                // console.log(`Socket for user ${receiverId.userId} not found.`);
             }
         } else {
-            console.log(`Socket ID for user ${receiverId.userId} not found.`);
+            // console.log(`Socket ID for user ${receiverId.userId} not found.`);
         }
     }
 
@@ -126,10 +126,10 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (recipientSocket) {
                 recipientSocket.emit('onEmitUser', { ...body });
             } else {
-                console.log(`Socket for user ${receiver} not found.`);
+                // console.log(`Socket for user ${receiver} not found.`);
             }
         } else {
-            console.log(`Socket ID for user ${receiver} not found.`);
+            // console.log(`Socket ID for user ${receiver} not found.`);
         }
     }
 
@@ -150,14 +150,14 @@ export class Gateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (recipientSocket) {
                 recipientSocket.emit('onScheduleToUser', { notification });
             } else {
-                console.log(`Socket for user ${userId} not found.`);
+                // console.log(`Socket for user ${userId} not found.`);
             }
         } else {
             if (!this.pendingNotifications[userId]) {
                 this.pendingNotifications[userId] = [];
             }
             this.pendingNotifications[userId].push(notification);
-            console.log(`Socket ID for user ${userId} not found.`);
+            // console.log(`Socket ID for user ${userId} not found.`);
         }
     }
 
