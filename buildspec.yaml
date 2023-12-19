@@ -1,0 +1,16 @@
+version:0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 024238576932.dkr.ecr.eu-north-1.amazonaws.com
+  build:
+    commands:
+      - docker build -t auth -f ./apps/auth/Dockerfile .
+      - docker tag auth:latest 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
+
+      # - docker build -t auth -f ./apps/auth/Dockerfile .
+      # - docker tag auth:latest 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
+  post_build:
+    commands:
+      - docker push 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
