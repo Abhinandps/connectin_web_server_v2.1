@@ -10,11 +10,12 @@ phases:
       - docker build -t auth -f ./apps/auth/Dockerfile .
       - docker tag auth:latest 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
 
-      # - docker build -t auth -f ./apps/auth/Dockerfile .
-      # - docker tag auth:latest 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
+      - docker build -t cloud-gateway -f ./apps/cloud-gateway/Dockerfile .
+      - docker tag cloud-gateway:latest 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
 
       
 
   post_build:
     commands:
+      - docker push 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
       - docker push 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest

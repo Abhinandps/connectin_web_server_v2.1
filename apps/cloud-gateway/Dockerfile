@@ -10,6 +10,8 @@ RUN npm install
 COPY apps/auth apps/cloud-gateway
 COPY libs libs
 
+RUN cd apps/cloud-gateway && npm install
+
 RUN npm run build cloud-gateway
 
 FROM node:alpine as production
