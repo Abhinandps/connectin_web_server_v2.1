@@ -12,6 +12,9 @@ phases:
 
       # - docker build -t auth -f ./apps/auth/Dockerfile .
       # - docker tag auth:latest 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
+
+      
+
   post_build:
     commands:
       - docker push 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest

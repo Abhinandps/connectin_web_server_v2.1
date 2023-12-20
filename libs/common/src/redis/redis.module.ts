@@ -9,9 +9,10 @@ import { CacheModule } from '@nestjs/cache-manager';
         CacheModule.registerAsync({
             isGlobal: true,
             imports: [ConfigModule],
-            useFactory: async (configService: ConfigService) => ({
+            useFactory: async (configService: ConfigService) => 
+            ({
                 store: redisStore, 
-                url: configService.get('REDIS_URI'),
+                url: configService.get<string>('REDIS_URI'),
                 ttl: 5000,
             }),
             inject: [ConfigService],
