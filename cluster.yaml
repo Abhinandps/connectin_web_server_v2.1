@@ -1,0 +1,12 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: connectin
+  region: eu-north-1
+
+nodeGroups:
+  - name: ng-1
+    instanceType: t3.micro
+    desiredCapacity: 3
+
