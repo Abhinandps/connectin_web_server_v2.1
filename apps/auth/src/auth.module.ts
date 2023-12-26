@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi'
-import { DatabaseModule, KafkaService, RedisPubSubService, } from '@app/common';
+import { DatabaseModule, KafkaService, RedisModule, RedisPubSubService, } from '@app/common';
 import { AuthRepository } from './auth.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
@@ -49,6 +49,7 @@ import { APP_FILTER } from '@nestjs/core';
         EMAIL_CONFIRMATION_URL: Joi.string().required(),
         MONGODB_URI: Joi.string().required(),
         PORT: Joi.string().required(),
+        REDIS_URI: Joi.string().required(),
       }),
       envFilePath: './apps/auth/.env'
     }),
@@ -62,7 +63,8 @@ import { APP_FILTER } from '@nestjs/core';
       }),
       inject: [ConfigService]
     }),
-    DatabaseModule
+    DatabaseModule,
+    RedisModule
   ],
   controllers: [AuthController, EmailConfirmationController],
   providers: [AuthService, AuthRepository,

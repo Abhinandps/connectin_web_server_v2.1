@@ -4,10 +4,11 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY tsconfig.json tsconfig.json
+COPY nest-cli.json nest-cli.json
 
 RUN npm install
 
-COPY apps/auth apps/cloud-gateway
+COPY apps/cloud-gateway apps/cloud-gateway
 COPY libs libs
 
 RUN cd apps/cloud-gateway && npm install

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: auth
+  name: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
+        name: auth
+        env:
+          - name: PORT
+            value: '3001'
+
+          - name: JWT_ACCESS_TOKEN_EXPIRATION_TIME
+            value: '3600'
+
+          - name: JWT_REFRESH_TOKEN_EXPIRATION_TIME
+            value: '7d'
+
+          - name: JWT_ACCESS_TOKEN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: jwt
+                key: accessTokenSecret
+
+          - name: JWT_REFRESH_TOKEN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: jwt
+                key: refreshTokenSecret
+
+          - name: EMAIL_SERVICE
+            value: 'gmail'
+
+          - name: EMAIL_USER
+            value: 'candycode333s@gmail.com'
+
+          - name: MONGODB_URI
+            value: 'mongodb+srv://abhinand:mdTdvaV7tcptGZzN@cluster0.k9o2w1j.mongodb.net/c_auth?retryWrites=true'
+
+          - name: EMAIL_CONFIRMATION_URL
+            value: 'http://localhost:5173/email-confirmation/confirm'
+
+          - name: EMAIL_PASSWORD
+            valueFrom: 
+              secretKeyRef:
+                name: email
+                key: password
+
+          - name: KAFKA_BROKER_URL
+            value : 'kafka://kafka.default.svc.cluster.local:9092'
+
+          - name: REDIS_PASS
+            value : 'password'
+
+          - name: REDIS_URI
+            value : 'redis://redis.default.svc.cluster.local:6379'
+
+            
+            # value : 'redis://default:${REDIS_PASS}@127.0.0.1:6379'
+
+            # value : 'redis://127.0.0.1:6379'
+            # value : 'redis://default:${REDIS_PASS}@redis:6379'
+
+
+
+

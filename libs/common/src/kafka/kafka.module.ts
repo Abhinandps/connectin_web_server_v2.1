@@ -25,7 +25,7 @@ export class KafkaModule {
                         transport: Transport.KAFKA,
                         options: {
                             client: {
-                                brokers: ['kafka:9092'],
+                                brokers: ['localhost:9092'],
                             },
                             consumer: {
                                 groupId: `${name}-CONSUMER`,
@@ -37,17 +37,24 @@ export class KafkaModule {
             providers: [
                 {
                     provide: 'KAFKA_OPTIONS',
-                    useFactory: (configService: ConfigService) => ({
-                        transport: Transport.KAFKA,
-                        options: {
-                            client: {
-                                brokers: [configService.get<string>('KAFKA_BROKER_URL')],
-                            },
-                            consumer: {
-                                groupId: configService.get<string>(`${name}-CONSUMER`),
-                            },
-                        },
-                    }),
+                    useFactory: async (configService: ConfigService) => {
+                        try {
+                            return {
+                                transport: Transport.KAFKA,
+                                options: {
+                                    client: {
+                                        brokers: [configService.get<string>('KAFKA_BROKER_URL')],
+                                    },
+                                    consumer: {
+                                        groupId: configService.get<string>(`${name}-CONSUMER`),
+                                    },
+                                },
+                            };
+                        } catch (error) {
+                            console.error('Error configuring Kafka:', error.message);
+                            return {}; 
+                        }
+                    },
                     inject: [ConfigService],
                 }
             ],
@@ -56,3 +63,16 @@ export class KafkaModule {
     }
 }
 
+
+
+// useFactory: (configService: ConfigService) => ({
+//     transport: Transport.KAFKA,
+//     options: {
+//         client: {
+//             brokers: [configService.get<string>('KAFKA_BROKER_URL')],
+//         },
+//         consumer: {
+//             groupId: configService.get<string>(`${name}-CONSUMER`),
+//         },
+//     },
+// }),

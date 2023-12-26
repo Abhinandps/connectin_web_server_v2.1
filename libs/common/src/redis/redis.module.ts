@@ -9,12 +9,19 @@ import { CacheModule } from '@nestjs/cache-manager';
         CacheModule.registerAsync({
             isGlobal: true,
             imports: [ConfigModule],
-            useFactory: async (configService: ConfigService) => 
-            ({
-                store: redisStore, 
-                url: configService.get<string>('REDIS_URI'),
-                ttl: 5000,
-            }),
+            useFactory: async (configService: ConfigService):Promise<any> => {
+                try {
+                    return {
+                        store: redisStore, 
+                        url: configService.get<string>('REDIS_URI'),
+                        ttl: 5000,
+                    };
+                } catch (error) {
+                    console.error('Error configuring Redis:', error.message);
+                    // Handle the error gracefully (e.g., log, fallback, or provide default values)
+                    return {}; // Return an empty configuration or fallback configuration
+                }
+            },
             inject: [ConfigService],
         }),
     ],
@@ -24,7 +31,12 @@ import { CacheModule } from '@nestjs/cache-manager';
 export class RedisModule { }
 
 
-
+// useFactory: async (configService: ConfigService) => 
+// ({
+//     store: redisStore, 
+//     url: configService.get<string>('REDIS_URI'),
+//     ttl: 5000,
+// }),
 
 
 

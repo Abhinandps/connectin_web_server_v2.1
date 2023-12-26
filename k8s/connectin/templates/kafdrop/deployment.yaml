@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kafdrop
+  name: kafdrop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafdrop
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: kafdrop
+    spec:
+      containers:
+      - image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/kafdrop:latest
+        name: kafdrop

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kafka
+  name: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/kafka:latest
+        name: kafka
+
+        ports:
+        - containerPort: 29092  
+        - containerPort: 9092   
+        env:
+        - name: KAFKA_LISTENERS
+          value: "INTERNAL://:29092,EXTERNAL://:9092"  
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "INTERNAL://kafka:29092,EXTERNAL://kafka:9092"

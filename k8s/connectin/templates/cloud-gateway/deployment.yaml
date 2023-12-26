@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cloud-gateway
+  name: cloud-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-gateway
+  template:
+    metadata:
+      labels:
+        app: cloud-gateway
+    spec:
+      containers:
+      - image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
+        name: cloud-gateway
+        env:
+          - name: PORT
+            value: '3000'
+          
+          - name: AUTH_SERVICE_URI
+            value: 'http://localhost:3001/api/v1'
+          
+          - name: USER_SERVICE_URI
+            value: 'http://localhost:3002/api/v1'
+
+          - name: POST_SERVICE_URI
+            value: 'http://localhost:3003/api/v1'
+            
+          - name: JWT_ACCESS_TOKEN_EXPIRATION_TIME
+            value: '3600'
+
+          - name: JWT_REFRESH_TOKEN_EXPIRATION_TIME
+            value: '7d'
+
+          - name: JWT_ACCESS_TOKEN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: jwt
+                key: accessTokenSecret
+
+          - name: JWT_REFRESH_TOKEN_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: jwt
+                key: refreshTokenSecret
+        ports:
+          - containerPort: 3000
