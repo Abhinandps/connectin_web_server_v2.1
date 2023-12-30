@@ -25,7 +25,8 @@ export class KafkaModule {
                         transport: Transport.KAFKA,
                         options: {
                             client: {
-                                brokers: ['localhost:9092'],
+                                brokers: ['51.20.73.232:9092'],
+                                ssl: true,
                             },
                             consumer: {
                                 groupId: `${name}-CONSUMER`,
@@ -52,7 +53,7 @@ export class KafkaModule {
                             };
                         } catch (error) {
                             console.error('Error configuring Kafka:', error.message);
-                            return {}; 
+                            return {};
                         }
                     },
                     inject: [ConfigService],

@@ -49,7 +49,7 @@ import { APP_FILTER } from '@nestjs/core';
         EMAIL_CONFIRMATION_URL: Joi.string().required(),
         MONGODB_URI: Joi.string().required(),
         PORT: Joi.string().required(),
-        REDIS_URI: Joi.string().required(),
+        // REDIS_URI: Joi.string().required(),
       }),
       envFilePath: './apps/auth/.env'
     }),
