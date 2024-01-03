@@ -1,25 +1,22 @@
 
-
 version: '2.1'
-
-
 
 services:
     auth:
-    #   image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
-    #   ports:
-    #     - '3001:3001'
-    #   env_file:
-    #     - ./apps/auth/.env
-      build:
-        context: .
-        dockerfile: ./apps/auth/Dockerfile
-        target: development
-      command: npm run start:dev auth
+      image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
       ports:
         - '3001:3001'
       env_file:
         - ./apps/auth/.env
+      # build:
+      #   context: .
+      #   dockerfile: ./apps/auth/Dockerfile
+      #   target: development
+      # command: npm run start:dev auth
+      # ports:
+      #   - '3001:3001'
+      # env_file:
+      #   - ./apps/auth/.env
       depends_on:
       - kafka
       - redis
@@ -35,21 +32,21 @@ services:
 
 
     cloud-gateway:
-      # image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
-      # ports:
-      #   - '3000:3000'
-      # env_file:
-      #   - ./apps/cloud-gateway/.env
-
-      build:
-        context: .
-        dockerfile: ./apps/cloud-gateway/Dockerfile
-        target: development
-      command: npm run start:dev cloud-gateway
+      image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
       ports:
         - '3000:3000'
       env_file:
         - ./apps/cloud-gateway/.env
+
+      # build:
+      #   context: .
+      #   dockerfile: ./apps/cloud-gateway/Dockerfile
+      #   target: development
+      # command: npm run start:dev cloud-gateway
+      # ports:
+      #   - '3000:3000'
+      # env_file:
+      #   - ./apps/cloud-gateway/.env
       networks:
         - mynetwork
       # depends_on:
@@ -58,7 +55,7 @@ services:
       #   - mongodb-arbiter
       volumes:
         - .:/usr/src/app
-        - /usr/src/app/node_modules
+        # - /usr/src/app/node_modules
 
   #   mongodb-primary:
   #     image: docker.io/bitnami/mongodb:7.0
