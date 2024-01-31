@@ -1,4 +1,4 @@
-import { AUTH_SERVICE, DELETE_POST, GET_FOLLOWED_USERS, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NEW_POSTS, NOTIFICATIONS_SERVICE, REQ_GET_FOLLOWED_USERS, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
+import { AUTH_SERVICE, DELETE_POST, HASHTAG_FOLLOWS, HASHTAG_UNFOLLOWS, NEW_POST, NOTIFICATIONS_SERVICE, RedisPubSubService, UPDATE_FEED_USER_FOLLOWS, UPDATE_FEED_USER_UNFOLLOWS } from '@app/common';
 import { Injectable, Inject, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { CreatePostDto } from './dto/post.dto';
@@ -8,7 +8,7 @@ import { PostRepository } from './posts.repsitory';
 import { Likes, Post } from './schemas/posts.schema';
 import { HashTagRepository } from './hashTags.repository';
 import { SaveOptions, Types } from 'mongoose';
-import { repl } from '@nestjs/core';
+// import { repl } from '@nestjs/core';
 import { HashTag } from './schemas/hashTag.schema';
 import { USER_SERVICE } from './constant/services';
 

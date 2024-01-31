@@ -1,4 +1,3 @@
-
 version: '2.2'
 
 services:
@@ -12,7 +11,7 @@ services:
     ports:
       - '3000:3000'
     env_file:
-        - ./apps/cloud-gateway/.env
+      - ./apps/cloud-gateway/.env
     volumes:
       - .:/usr/src/app
 
@@ -25,26 +24,42 @@ services:
     ports:
       - '3001:3001'
     env_file:
-        - ./apps/auth/.env
+      - ./apps/auth/.env
     depends_on:
       - kafka
       - redis
     volumes:
       - .:/usr/src/app
-    
+
+  post:
+    build:
+      context: .
+      dockerfile: ./apps/post/Dockerfile
+      target: development
+    command: npm run start:dev post
+    ports:
+      - '3003:3003'
+    env_file:
+      - ./apps/post/.env
+    depends_on:
+      - kafka
+      - redis
+    volumes:
+      - .:/usr/src/app
+
   redis:
     image: redis
     restart: unless-stopped
     ports:
       - 6379:6379
-  # redis_insight:
-  #   image: redislabs/redisinsight
-  #   container_name: redis_insight
-  #   restart: always
-  #   ports:
-  #     - 8001:8001
-  #   volumes:
-  #     - redis_insight_volume_data:/db
+      # redis_insight:
+      #   image: redislabs/redisinsight
+      #   container_name: redis_insight
+      #   restart: always
+      #   ports:
+      #     - 8001:8001
+      #   volumes:
+      #     - redis_insight_volume_data:/db
 
 
 
@@ -54,12 +69,12 @@ services:
 
 
 
-    # auth:
-    #   image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
-    #   ports:
-    #     - '3001:3001'
-    #   env_file:
-    #     - ./apps/auth/.env
+      # auth:
+      #   image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/auth:latest
+      #   ports:
+      #     - '3001:3001'
+      #   env_file:
+      #     - ./apps/auth/.env
       # build:
       #   context: .
       #   dockerfile: ./apps/auth/Dockerfile
@@ -80,15 +95,15 @@ services:
       #   - mongodb-arbiter
       # volumes:
       #   - .:/usr/src/app
-        # - /usr/src/app/node_modules
+      # - /usr/src/app/node_modules
 
 
-    # cloud-gateway:
-    #   image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
-    #   ports:
-    #     - '3000:3000'
-    #   env_file:
-    #     - ./apps/cloud-gateway/.env
+      # cloud-gateway:
+      #   image: 024238576932.dkr.ecr.eu-north-1.amazonaws.com/cloud-gateway:latest
+      #   ports:
+      #     - '3000:3000'
+      #   env_file:
+      #     - ./apps/cloud-gateway/.env
 
       # build:
       #   context: .
@@ -107,63 +122,63 @@ services:
       #   - mongodb-arbiter
       # volumes:
       #   - .:/usr/src/app
-        # - /usr/src/app/node_modules
+      # - /usr/src/app/node_modules
 
-  #   mongodb-primary:
-  #     image: docker.io/bitnami/mongodb:7.0
-  #     environment:
-  #       - MONGODB_ADVERTISED_HOSTNAME=mongodb-primary
-  #       - MONGODB_REPLICA_SET_MODE=primary
-  #       - MONGODB_ROOT_PASSWORD=password123
-  #       - MONGODB_REPLICA_SET_KEY=replicasetkey123
-  #     volumes:
-  #       - 'mongodb_master_data:/bitnami/mongodb'
-  #     ports:
-  #       - '27017:27017'
+      #   mongodb-primary:
+      #     image: docker.io/bitnami/mongodb:7.0
+      #     environment:
+      #       - MONGODB_ADVERTISED_HOSTNAME=mongodb-primary
+      #       - MONGODB_REPLICA_SET_MODE=primary
+      #       - MONGODB_ROOT_PASSWORD=password123
+      #       - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      #     volumes:
+      #       - 'mongodb_master_data:/bitnami/mongodb'
+      #     ports:
+      #       - '27017:27017'
 
-  #   mongodb-secondary:
-  #     image: docker.io/bitnami/mongodb:7.0
-  #     depends_on:
-  #       - mongodb-primary
-  #     environment:
-  #       - MONGODB_ADVERTISED_HOSTNAME=mongodb-secondary
-  #       - MONGODB_REPLICA_SET_MODE=secondary
-  #       - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
-  #       - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
-  #       - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      #   mongodb-secondary:
+      #     image: docker.io/bitnami/mongodb:7.0
+      #     depends_on:
+      #       - mongodb-primary
+      #     environment:
+      #       - MONGODB_ADVERTISED_HOSTNAME=mongodb-secondary
+      #       - MONGODB_REPLICA_SET_MODE=secondary
+      #       - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      #       - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
+      #       - MONGODB_REPLICA_SET_KEY=replicasetkey123
 
-  #   mongodb-arbiter:
-  #     image: docker.io/bitnami/mongodb:7.0
-  #     depends_on:
-  #       - mongodb-primary
-  #     environment:
-  #       - MONGODB_ADVERTISED_HOSTNAME=mongodb-arbiter
-  #       - MONGODB_REPLICA_SET_MODE=arbiter
-  #       - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
-  #       - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
-  #       - MONGODB_REPLICA_SET_KEY=replicasetkey123
+      #   mongodb-arbiter:
+      #     image: docker.io/bitnami/mongodb:7.0
+      #     depends_on:
+      #       - mongodb-primary
+      #     environment:
+      #       - MONGODB_ADVERTISED_HOSTNAME=mongodb-arbiter
+      #       - MONGODB_REPLICA_SET_MODE=arbiter
+      #       - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      #       - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
+      #       - MONGODB_REPLICA_SET_KEY=replicasetkey123
 
-  # volumes:
-  #   mongodb_master_data:
-  #     driver: local
+      # volumes:
+      #   mongodb_master_data:
+      #     driver: local
 
-  # redis:
-  #   image: redis:latest
-    # restart: unless-stopped
+      # redis:
+      #   image: redis:latest
+      # restart: unless-stopped
       # command: /bin/sh -c "redis-server --requirepass $$REDIS_PASS"
-    # env_file:
-    #   - .env
+      # env_file:
+      #   - .env
       # environment:
       # - REDIS_PASS=password
-    # ports:  
-    #     - "6379:6379"
+      # ports:  
+      #     - "6379:6379"
       # volumes:
       #   - ./redis-data:/data
       #   - ./redis.conf:/usr/src/app/redis/redis.conf
       # command: redis-server /usr/src/app/redis/redis.conf
       # networks:
       #   - mynetwork
-    
+
 
   kafdrop:
     image: obsidiandynamics/kafdrop
@@ -195,11 +210,11 @@ services:
       ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL: "0"
     #   networks:
     #     - mynetwork
-# volumes:
-#   redis_volume_data:
-#   redis_insight_volume_data:
+    # volumes:
+    #   redis_volume_data:
+    #   redis_insight_volume_data:
 
-# networks:
-#   mynetwork:
-#     driver: bridge
-# -----------------------------------------------------
+    # networks:
+    #   mynetwork:
+    #     driver: bridge
+    # -----------------------------------------------------
