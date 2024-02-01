@@ -1,10 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafdrop
+  name: kafka-kafdrop-service
+  namespace: "kafdrop"
+  labels:
+    app: kafka-kafdrop
+  annotations:
+    cloud.google.com/load-balancer-type: "Internal"
 spec:
-  selector:
-    app: kafdrop
   ports:
-  - port: 9000
-    name: kafdrop
+    - protocol: "TCP"
+      port: 9000
+      name: server
+  selector:
+    app: kafka-kafdrop
+  type: LoadBalancer

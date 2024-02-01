@@ -2,19 +2,17 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: connectin
-  annotation:
-    alb.ingress.kubernets.io/scheme: internet-facing
-    kubernets.io/ingress.class: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    kubernetes.io/ingress.class: alb
 spec: 
   rules:
-    - http:
-        paths: 
-          - path: /auth/*
-            pathType: Prefix  
-            backend: 
-              service:
-                name: auth
-                port:
-                  number: 3001
-
-
+  - http:
+      paths:
+      - path: /auth/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: auth 
+            port:
+              number: 3001

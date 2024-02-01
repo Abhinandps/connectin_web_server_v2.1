@@ -4,7 +4,9 @@ metadata:
   name: redis
 spec:
   selector:
-    app: redis  
+    app: redis
   ports:
-    - port: 6379  # Redis port
-      targetPort: 6379  # Port on the pod
+    - protocol: TCP
+      port: 6379  
+      targetPort: 6379 
+  type: NodePort  # Expose service on a port across the cluster's nodes

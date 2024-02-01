@@ -58,13 +58,13 @@ spec:
                 key: password
 
           - name: KAFKA_BROKER_URL
-            value : 'kafka://kafka.default.svc.cluster.local:9092'
+            value : '10.100.5.191:9092'
 
           # - name: REDIS_PASS
           #   value : 'password'
 
-          # - name: REDIS_URI
-          #   value : 'redis://redis.default.svc.cluster.local:6379'
+          - name: REDIS_URI
+            value : 'redis://redis.default.svc.cluster.local:6379'
 
         # ports:
         #   - continerPort: 3001
